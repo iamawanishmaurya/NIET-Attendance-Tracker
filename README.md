@@ -30,8 +30,7 @@ This Python script helps students at NIET (Noida Institute of Engineering and Te
     git clone https://github.com/iamawanishmaurya/NIET-Attendance-Tracker.git
     cd NIET-Attendance-Tracker
     ```
-    (Replace `<your-repository-url>` and `<your-repository-directory>` accordingly)
-
+    
 2.  **Install the required libraries:**
     ```bash
     pip install requests pandas tabulate
