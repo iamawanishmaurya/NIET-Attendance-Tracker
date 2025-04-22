@@ -60,20 +60,25 @@ python -m venv myenv && source ~/myenv/bin/activate
 
 <table>
   <tr>
-  <td align="center">
-        <img src="assests/gif/installation.gif" width="400px;" alt=""/>
+    <td align="center" width="33%">
+        <img src="assests/gif/installation.gif" width="100%" alt="Installation"/>
     </td>
-   <td align="center">
-        <img src="assests/images/Niet_Attendance_Tracker.jpg" width="400px;" alt=""/>
+    <td align="center" width="33%">
+        <img src="assests/images/Niet_Attendance_Tracker.jpg" width="100%" alt="NIET Attendance Tracker"/>
     </td>
-    <td align="center">
-        <img src="assests/images/Attendance_Summary.jpg" width="400px;" alt=""/>
+    <td align="center" width="33%">
+        <img src="assests/images/Attendance_Summary.jpg" width="100%" alt="Attendance Summary"/>
     </td>
-    <td align="center">
-        <img src="assests/images/Detailed_Attendance.jpg" width="400px;" alt=""/>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+        <img src="assests/images/Detailed_Attendance.jpg" width="100%" alt="Detailed Attendance"/>
     </td>
-    <td align="center">
-        <img src="assests/images/Future_Attendance_Projection.jpg" width="400px;" alt=""/>
+    <td align="center" width="33%">
+        <img src="assests/images/Future_Attendance_Projection.jpg" width="100%" alt="Future Attendance Projection"/>
+    </td>
+    <td align="center" width="33%">
+        <!-- Empty cell or you could add another image here -->
     </td>
   </tr>
 </table>
