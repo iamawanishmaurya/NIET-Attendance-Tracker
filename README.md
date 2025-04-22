@@ -100,3 +100,14 @@ Contributions are welcome! Feel free to submit pull requests or open issues for 
 <a href="https://github.com/iamawanishmaurya/NIET-Attendance-Tracker/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=iamawanishmaurya/NIET-Attendance-Tracker" />
 </a>
+
+![Alt](https://repobeats.axiom.co/api/embed/fa3995e7339da9586497c625c8613579549e4d78.svg "Repobeats analytics image")
+## Star History
+
+<a href="https://www.star-history.com/#iamawanishmaurya/NIET-Attendance-Tracker&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date" />
+ </picture>
+</a>
