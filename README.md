@@ -94,3 +94,9 @@ This script interacts with the NIET Cloud website. Use it responsibly and at you
 ## Contributing
 
 Contributions are welcome! Feel free to submit pull requests or open issues for bug fixes, feature enhancements, or code improvements.
+
+### Contributors
+
+<a href="https://github.com/iamawanishmaurya/NIET-Attendance-Tracker/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=iamawanishmaurya/NIET-Attendance-Tracker" />
+</a>
