@@ -77,9 +77,6 @@ python -m venv myenv && source ~/myenv/bin/activate
     <td align="center" width="33%">
         <img src="assests/images/Future_Attendance_Projection.jpg" width="100%" alt="Future Attendance Projection"/>
     </td>
-    <td align="center" width="33%">
-        <!-- Empty cell or you could add another image here -->
-    </td>
   </tr>
 </table>
 
