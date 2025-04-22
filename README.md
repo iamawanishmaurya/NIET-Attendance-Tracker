@@ -1,76 +1,97 @@
-# NIET Attendance Tracker
+# NIET Attendance Tracker ✨ V3
 
 ## Description
 
-This Python script helps students at NIET (Noida Institute of Engineering and Technology) track and analyze their attendance data fetched from the NIET Cloud portal. It provides features to view attendance summaries, detailed records, calculate requirements to meet attendance goals, estimate leave allowances, and project future attendance.
+This enhanced Python script helps students at NIET (Noida Institute of Engineering and Technology) track and analyze their attendance data. It can **log in directly** to the NIET Cloud portal using Selenium, fetch fresh data using a `JSESSIONID`, or load previously saved data. It provides a styled command-line interface (with colors and emojis if `colorama` is installed) to view summaries, detailed records, calculate attendance requirements, estimate leave allowances, and project future attendance.
 
 ## Features
 
-* **Fetch or Load Data**: Retrieve attendance data directly from NIET Cloud using your session's `JSESSIONID` or load previously saved data from a local `attendence.json` file.
-* **Attendance Summary**: View a summary table showing attendance counts (present/total) and percentages for each subject, along with an overall total.
-* **Detailed Subject Attendance**: See a detailed log of attendance for any specific subject, including date, lecture time, session, and status (Present/Absent).
-* **Target Percentage Calculation**: Calculate the exact number of consecutive classes you need to attend to reach a specific target attendance percentage (e.g., 85%) and estimates the number of days this will take based on a typical class schedule.
-* **Leave Allowance**: Estimate how many classes you can miss while maintaining a target attendance percentage (e.g., 85%) and approximates the corresponding number of leave days.
-* **Future Projection**: Project your attendance percentage by a future date, considering the typical weekly class schedule (7 classes Mon-Fri, 6 classes Sat) and allowing for custom holidays. See projections based on different future attendance rates (e.g., if you attend 100% of future classes, 90%, etc.).
-* **Attendance Alerts**: Get immediate alerts if your current overall attendance is below 85%, along with the number of classes needed to reach the target.
-* **Interactive CLI**: Easy-to-use command-line interface with menu options to access different features.
+*   **Multiple Data Sources**:
+    *   🌐 **Automated Browser Login**: Logs into NIET Cloud using Selenium, fetches data, and saves the login page HTML (`output_login_page.html`). Handles username saving and secure password input.
+    *   🔑 **Use Existing JSESSIONID**: Fetch fresh data using a session ID obtained manually from your browser.
+    *   💾 **Load from File**: Load previously fetched attendance data from a local `attendence.json` file (or a specified path).
+*   📊 **Attendance Summary**: View a summary table (nicely formatted if `tabulate` is installed) showing attendance counts (present/total) and percentages for each subject, plus an overall total.
+*   👀 **Detailed Subject Attendance**: See a detailed, sorted log of attendance for any specific subject, including date, lecture time, session, and status (Present/Absent).
+*   🎯 **Target Percentage Calculation**: Calculate the exact number of *consecutive* classes needed to reach a specific target attendance percentage (e.g., 85%) and estimate the number of school days required.
+*   🏖️ **Leave Allowance**: Estimate how many classes you can miss while maintaining a target attendance percentage (e.g., 85%) and approximate the corresponding number of leave days.
+*   📅 **Future Projection**: Project your attendance percentage by a future date, considering a typical weekly class schedule (7 classes Mon-Fri, 6 classes Sat) and allowing for custom holidays. See projections based on different future attendance rates (e.g., 100%, 90%, 75%).
+*   ⚠️ **Attendance Alerts**: Get immediate visual alerts if your current overall attendance is below 85%, showing classes needed to reach the target.
+*   ✨ **Enhanced CLI**: Improved command-line interface with:
+    *   Color-coded output (requires `colorama`).
+    *   Emojis for visual cues.
+    *   Loading animations during operations.
+    *   Conditional dependency handling (gracefully handles missing optional libraries like `tabulate`, `colorama`, `selenium`).
+*   🔄 **Username Persistence**: Option to save your NIET Cloud username for faster logins next time.
 
 ## Requirements
 
-* Python 3.x
-* Required Python libraries:
-    * `requests`
-    * `pandas`
-    * `tabulate`
+*   Python 3.x
+*   Required Python libraries (see `requirements.txt`):
+    *   **Core**: `requests`, `pandas`
+    *   **Optional (Recommended for Full Functionality)**:
+        *   `tabulate`: For nicely formatted summary and detail tables. Falls back to basic CSV-like output if missing.
+        *   `colorama`: For colored text output in the terminal. Styles are disabled if missing.
+        *   `selenium`, `beautifulsoup4`, `webdriver-manager`: For the automated browser login feature. This feature is disabled if missing.
 
 ## Installation
 
-1.  **Clone the repository (or download the script):**
+1.  **Clone the repository (or download `code.py`):**
     ```bash
-    git clone https://github.com/iamawanishmaurya/NIET-Attendance-Tracker.git
+    git clone https://github.com/iamawanishmaurya/NIET-Attendance-Tracker.git # Or your repo URL
     cd NIET-Attendance-Tracker
     ```
-    
+    *(Replace the URL if needed)*
+
 2.  **Install the required libraries:**
-    ```bash
-    pip install requests pandas tabulate
-    ```
+    *   **Recommended (All features):** Create a file named `requirements.txt` with the content provided above, then run:
+        ```bash
+        pip install -r requirements.txt
+        ```
+    *   **Core only (No browser login, no colors, basic tables):**
+        ```bash
+        pip install requests pandas
+        ```
+
+3.  **(For Selenium Login Feature Only)**: Ensure you have Google Chrome installed. The `webdriver-manager` library will attempt to automatically download the correct `ChromeDriver`. If this fails, you might need to manually download `ChromeDriver` and ensure it's in your system's PATH or specify its location.
 
 ## Usage
 
 1.  **Run the script:**
     ```bash
-    python niet_attendance_tracker.py
+    python code.py
     ```
 
-2.  **Choose Data Source:**
-    * **Option 1: Fetch from NIET Cloud:**
-        * You will be prompted to enter your `JSESSIONID`.
-        * **How to get JSESSIONID:**
+2.  **Choose Data Source:** You will be prompted to select how to get the attendance data:
+    *   **Option 1: Log in via Browser (Requires Selenium)**:
+        *   Enter your NIET Cloud username (will prompt to save if it's new or different from a saved one).
+        *   Enter your NIET Cloud password securely (it won't be displayed).
+        *   The script will automate Chrome (headless by default) to log in, fetch data, and save it to `attendence.json`. The raw HTML of the page after login is saved to `output_login_page.html`.
+    *   **Option 2: Use existing JSESSIONID:**
+        *   You will be prompted to enter your `JSESSIONID`.
+        *   **How to get JSESSIONID:**
             1.  Log in to the NIET Cloud portal (https://nietcloud.niet.co.in/) in your web browser.
-            2.  Open your browser's Developer Tools (usually by pressing F12).
-            3.  Go to the "Application" (in Chrome) or "Storage" (in Firefox) tab.
-            4.  Find the "Cookies" section and select the `nietcloud.niet.co.in` domain.
-            5.  Locate the cookie named `JSESSIONID` and copy its value.
-            6.  Paste this value into the script when prompted.
-        * The script will attempt to fetch the data and save it as `attendence.json` in the same directory.
-    * **Option 2: Load from local JSON file:**
-        * Enter the path to your JSON file (e.g., `attendence.json`). Press Enter to use the default `attendence.json`.
+            2.  Open Developer Tools (F12).
+            3.  Go to "Application" (Chrome) or "Storage" (Firefox).
+            4.  Find "Cookies" -> `nietcloud.niet.co.in`.
+            5.  Copy the `Value` of the `JSESSIONID` cookie.
+            6.  Paste it into the script.
+        *   The script fetches data and saves it to `attendence.json`.
+    *   **Option 3: Load from `attendence.json`:**
+        *   Enter the path to your JSON file or press Enter to use the default `attendence.json` in the script's directory.
 
-3.  **View Summary:** The script will display the overall attendance summary. If your attendance is below 85%, an alert will be shown.
+3.  **View Summary:** The script displays the overall attendance summary. Alerts appear if attendance is below 85%.
 
-4.  **Use Additional Features:**
-    * Follow the menu prompts to:
-        * View detailed attendance for a specific subject.
-        * Calculate leave allowance.
-        * Project future attendance (you'll need to provide an end date and optionally list holidays).
-        * Calculate classes needed to reach a custom target percentage.
-        * Exit the program.
+4.  **Use Additional Features:** Follow the menu prompts to:
+    *   View detailed attendance for a specific subject.
+    *   Calculate leave allowance for the default 85% target.
+    *   Project future attendance (input end date and optional holidays).
+    *   Calculate classes needed for a *custom* target percentage.
+    *   Exit the program.
 
 ## Disclaimer
 
-This script interacts with the NIET Cloud website. Use it responsibly. The accuracy of the fetched data depends on the NIET Cloud portal. Ensure your `JSESSIONID` is kept private. The developers of this script are not responsible for any issues arising from its use.
+This script interacts with the NIET Cloud website. Use it responsibly and at your own risk. The accuracy of fetched data depends entirely on the NIET Cloud portal. **Keep your credentials and `JSESSIONID` private.** The developers are not responsible for any issues, account actions, or discrepancies arising from its use. Website changes by NIET may break the Selenium login or data fetching functionality.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit pull requests or open issues to improve the script.
+Contributions are welcome! Feel free to submit pull requests or open issues for bug fixes, feature enhancements, or code improvements.
