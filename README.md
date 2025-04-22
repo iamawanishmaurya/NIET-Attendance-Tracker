@@ -41,7 +41,7 @@ This Python script helps students at NIET (Noida Institute of Engineering and Te
 
 1.  **Run the script:**
     ```bash
-    python enhanced-attendance-script-with-days.py
+    python niet_attendance_tracker.py
     ```
 
 2.  **Choose Data Source:**
