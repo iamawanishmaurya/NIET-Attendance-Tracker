@@ -132,8 +132,10 @@ Contributions are welcome! Feel free to submit pull requests or open issues for 
 
 ## Star History
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date&theme=dark" />
-  <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date" />
-  <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date" />
-</picture>
+<a href="https://www.star-history.com/#iamawanishmaurya/NIET-Attendance-Tracker&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date" />
+ </picture>
+</a>
