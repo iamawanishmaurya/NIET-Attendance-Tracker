@@ -27,8 +27,8 @@ This Python script helps students at NIET (Noida Institute of Engineering and Te
 
 1.  **Clone the repository (or download the script):**
     ```bash
-    git clone <your-repository-url>
-    cd <your-repository-directory>
+    git clone https://github.com/iamawanishmaurya/NIET-Attendance-Tracker.git
+    cd NIET-Attendance-Tracker
     ```
     (Replace `<your-repository-url>` and `<your-repository-directory>` accordingly)
 
