@@ -56,6 +56,30 @@ python -m venv myenv && source ~/myenv/bin/activate
 
 3.  **(For Selenium Login Feature Only)**: Ensure you have Google Chrome installed. The `webdriver-manager` library will attempt to automatically download the correct `ChromeDriver`. If this fails, you might need to manually download `ChromeDriver` and ensure it's in your system's PATH or specify its location.
 
+## Preview
+
+<table>
+  <tr>
+    <td align="center" width="33%">
+        <img src="assests/gif/installation.gif" width="100%" alt="Installation"/>
+    </td>
+    <td align="center" width="33%">
+        <img src="assests/images/Niet_Attendance_Tracker.jpg" width="100%" alt="NIET Attendance Tracker"/>
+    </td>
+    <td align="center" width="33%">
+        <img src="assests/images/Attendance_Summary.jpg" width="100%" alt="Attendance Summary"/>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="33%">
+        <img src="assests/images/Detailed_Attendance.jpg" width="100%" alt="Detailed Attendance"/>
+    </td>
+    <td align="center" width="33%">
+        <img src="assests/images/Future_Attendance_Projection.jpg" width="100%" alt="Future Attendance Projection"/>
+    </td>
+  </tr>
+</table>
+
 ## Usage
 
 1.  **Run the script:**
