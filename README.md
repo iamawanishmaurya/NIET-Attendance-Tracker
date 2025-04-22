@@ -35,21 +35,20 @@ This enhanced Python script helps students at NIET (Noida Institute of Engineeri
 
 ## Installation
 
-1.  **Clone the repository (or download `code.py`):**
+1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/iamawanishmaurya/NIET-Attendance-Tracker.git # Or your repo URL
+    git clone https://github.com/iamawanishmaurya/NIET-Attendance-Tracker.git
     cd NIET-Attendance-Tracker
     ```
-    *(Replace the URL if needed)*
 
 2.  **Install the required libraries:**
     *   **Recommended (All features):** Create a file named `requirements.txt` with the content provided above, then run:
         ```bash
         pip install -r requirements.txt
         ```
-    *   **Core only (No browser login, no colors, basic tables):**
+    *   **Core only :**
         ```bash
-        pip install requests pandas
+        pip install requests pandas tabulate colorama selenium beautifulsoup4 webdriver-manager
         ```
 
 3.  **(For Selenium Login Feature Only)**: Ensure you have Google Chrome installed. The `webdriver-manager` library will attempt to automatically download the correct `ChromeDriver`. If this fails, you might need to manually download `ChromeDriver` and ensure it's in your system's PATH or specify its location.
@@ -58,7 +57,7 @@ This enhanced Python script helps students at NIET (Noida Institute of Engineeri
 
 1.  **Run the script:**
     ```bash
-    python code.py
+    python niet_attendance_tracker.py
     ```
 
 2.  **Choose Data Source:** You will be prompted to select how to get the attendance data:
