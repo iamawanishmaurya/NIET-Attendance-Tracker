@@ -129,6 +129,7 @@ Contributions are welcome! Feel free to submit pull requests or open issues for 
 </a>
 
 ![Alt](https://repobeats.axiom.co/api/embed/fa3995e7339da9586497c625c8613579549e4d78.svg "Repobeats analytics image")
+
 ## Star History
 
-<iframe style="width:100%;height:auto;min-width:600px;min-height:400px;" src="https://www.star-history.com/embed?secret=Z2hwX1lWWUt4SUQwWVFObnJSa2dWVmVTUzh0MTRCZFFQMDJTejA5cg==#iamawanishmaurya/NIET-Attendance-Tracker&Date" frameBorder="0"></iframe>
+[![Star History Chart](https://api.star-history.com/svg?repos=iamawanishmaurya/NIET-Attendance-Tracker&type=Date)](https://www.star-history.com/#iamawanishmaurya/NIET-Attendance-Tracker&Date)
