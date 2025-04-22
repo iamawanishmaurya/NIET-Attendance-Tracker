@@ -64,26 +64,21 @@ python -m venv myenv && source ~/myenv/bin/activate
         <img src="assests/gif/installation.gif" width="400px;" alt=""/>
     </td>
    <td align="center">
-        <img src="assests/images/Niet_Attendance_Tracker.jpg" width="200px;" alt=""/>
+        <img src="assests/images/Niet_Attendance_Tracker.jpg" width="400px;" alt=""/>
     </td>
     <td align="center">
-        <img src="assests/images/Attendance_Summary.jpg" width="200px;" alt=""/>
+        <img src="assests/images/Attendance_Summary.jpg" width="400px;" alt=""/>
     </td>
     <td align="center">
-        <img src="assests/images/Detailed_Attendance.jpg" width="200px;" alt=""/>
+        <img src="assests/images/Detailed_Attendance.jpg" width="400px;" alt=""/>
     </td>
    
   </tr>
   <tr>
     <td align="center">
-        <img src="assests/images/Future_Attendance_Projection.jpg" width="200px;" alt=""/>
+        <img src="assests/images/Future_Attendance_Projection.jpg" width="400px;" alt=""/>
     </td>
-    <td align="center">
-        <img src="assets/images/screenshot-6.jpeg" width="200px;" alt=""/>
-    </td>
-    <td align="center">
-        <img src="assets/images/screenshot-8.jpeg" width="200px;" alt=""/>
-    </td>
+
   </tr>
 </table>
 
