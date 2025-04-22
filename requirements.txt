@@ -1,0 +1,8 @@
+# Core requirements
+requests
+pandas
+tabulate       # For formatted table output
+colorama       # For colored terminal output
+selenium       # For automated browser login
+beautifulsoup4 # For parsing HTML (used with Selenium)
+webdriver-manager # For automatically managing ChromeDriver
