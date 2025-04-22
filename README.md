@@ -72,13 +72,9 @@ python -m venv myenv && source ~/myenv/bin/activate
     <td align="center">
         <img src="assests/images/Detailed_Attendance.jpg" width="400px;" alt=""/>
     </td>
-   
-  </tr>
-  <tr>
     <td align="center">
         <img src="assests/images/Future_Attendance_Projection.jpg" width="400px;" alt=""/>
     </td>
-
   </tr>
 </table>
 
