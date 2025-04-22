@@ -32,7 +32,10 @@ This enhanced Python script helps students at NIET (Noida Institute of Engineeri
         *   `tabulate`: For nicely formatted summary and detail tables. Falls back to basic CSV-like output if missing.
         *   `colorama`: For colored text output in the terminal. Styles are disabled if missing.
         *   `selenium`, `beautifulsoup4`, `webdriver-manager`: For the automated browser login feature. This feature is disabled if missing.
-
+## Creating virtual environment
+```
+python -m venv myenv && source ~/myenv/bin/activate
+```
 ## Installation
 
 1.  **Clone the repository:**
