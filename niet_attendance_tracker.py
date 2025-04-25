@@ -9,14 +9,12 @@ import sys
 import time
 import threading
 import getpass # For password input
-
 # --- Configuration ---
 CREDENTIALS_FILE = "credentials.json"
 ATTENDANCE_FILE = "attendence.json"
 SELENIUM_OUTPUT_FILE = "output_login_page.html"
 NIET_LOGIN_URL = "https://nietcloud.niet.co.in/login.htm"
 NIET_ATTENDANCE_URL = 'https://nietcloud.niet.co.in/getSubjectOnChangeWithSemId1.json'
-
 # --- Check and Import Tabulate ---
 try:
     from tabulate import tabulate
@@ -46,12 +44,9 @@ except ImportError:
                      output_lines.append(str(row))
         else:
              output_lines.append(str(data))
-
         output_lines.append("--------------------------------------------")
         print("\n".join(output_lines)) # Print the generated lines
         return "" # Return empty string to avoid errors where print result might be expected
-
-
 # --- Colorama ---
 try:
     import colorama
@@ -74,7 +69,6 @@ except ImportError:
     C_MAGENTA=C_CYAN=C_WHITE=C_BLACK=C_HEADER=C_TITLE=""
     C_PROMPT=C_ERROR=C_WARNING=C_SUCCESS=C_INFO=C_BOLD=""
     C_LOW=C_MID=C_HIGH=C_SUBJECT=""
-
 # --- Selenium ---
 try:
     from selenium import webdriver
@@ -95,16 +89,13 @@ except ImportError:
         """Dummy Exception for when Selenium is not installed."""
         pass
     # --- *** END OF CORRECTION *** ---
-
 # --- Emojis ---
 E_SUCCESS="✅"; E_ERROR="❌"; E_WARNING="⚠️"; E_INFO="ℹ️"; E_PROMPT="👉"; E_CLOCK="⏳"; E_ROCKET="🚀"; E_TARGET="🎯"
 E_CALENDAR="📅"; E_BOOK="📚"; E_LOGIN="🔑"; E_LOGOUT="🚪"; E_EYES="👀"; E_CHART_UP="📈"; E_CHART_DOWN="📉"; E_NEUTRAL="😐"
 E_HAPPY="😊"; E_SAD="😟"; E_THINK="🤔"; E_STAR="✨"; E_POINT_RIGHT="👉"; E_WAVE="👋"; E_GEAR="⚙️"; E_COMPUTER="💻"
 E_SAVE = "💾"; E_REUSE = "🔄"
-
 # === Utility ===
 def clear_screen(): os.system('cls' if os.name == 'nt' else 'clear')
-
 # === Loading Animation ===
 _loading_stop=threading.Event(); _loading_thread=None
 def _animate(msg="Loading..."):
@@ -122,20 +113,17 @@ def stop_loading(succ_msg=None):
     if _loading_thread and _loading_thread.is_alive(): _loading_stop.set();_loading_thread.join(0.5)
     _loading_thread=None
     if succ_msg: print(f"{C_SUCCESS}{E_SUCCESS} {succ_msg}{C_RESET}")
-
 # === Credentials Management ===
 def load_saved_username():
     if not os.path.exists(CREDENTIALS_FILE): return None
     try:
         with open(CREDENTIALS_FILE, 'r') as f: data=json.load(f); return data.get('username')
     except(json.JSONDecodeError,IOError) as e: print(f"{C_WARNING}{E_WARNING} Error reading {CREDENTIALS_FILE}: {e}{C_RESET}"); return None
-
 def save_username(username):
     try:
         with open(CREDENTIALS_FILE, 'w') as f: json.dump({'username': username}, f)
         print(f"{C_INFO}{E_SAVE} Username '{username}' saved for next time.{C_RESET}")
     except IOError as e: print(f"{C_ERROR}{E_ERROR} Could not save username to {CREDENTIALS_FILE}: {e}{C_RESET}")
-
 # === Selenium Login ===
 def login_and_extract_selenium(url, username, password, output_filename=SELENIUM_OUTPUT_FILE):
     if not SELENIUM_AVAILABLE: print(f"{C_ERROR}{E_ERROR} Selenium unavailable.{C_RESET}"); return None,None
@@ -168,7 +156,6 @@ def login_and_extract_selenium(url, username, password, output_filename=SELENIUM
         except TimeoutException:
             stop_loading()
             print(f"{C_WARNING}{E_WARNING} Post-login confirmation timeout.")
-        
         pg_src = driver.page_source
         with open(output_filename,"w",encoding="utf-8") as f:
             f.write(pg_src)
@@ -182,7 +169,6 @@ def login_and_extract_selenium(url, username, password, output_filename=SELENIUM
     finally:
         if driver: start_loading(f"{E_LOGOUT} Closing..."); driver.quit(); stop_loading(f"{E_LOGOUT} Closed.")
     return username if jsessionid else None, jsessionid # Return the initiating username if successful (JSESSIONID found)
-
 # === Attendance Data Fetching ===
 def fetch_attendance_data(jsessionid):
     if not jsessionid: print(f"{C_ERROR}{E_ERROR} JSESSIONID required.{C_RESET}"); return None
@@ -202,7 +188,6 @@ def fetch_attendance_data(jsessionid):
     except json.JSONDecodeError: stop_loading(); print(f"{C_ERROR}{E_ERROR} Invalid JSON received.{C_RESET}"); print(f"{C_DIM}Response:{response.text[:100] if response else 'N/A'}{C_RESET}")
     except Exception as e: stop_loading(); print(f"{C_ERROR}{E_ERROR} Fetching error: {e}{C_RESET}")
     return data
-
 # === Data Loading / Processing / Display (Keep stylish versions) ===
 def load_attendance_data(json_file=ATTENDANCE_FILE):
     try:
@@ -210,7 +195,6 @@ def load_attendance_data(json_file=ATTENDANCE_FILE):
     except FileNotFoundError: print(f"{C_ERROR}{E_ERROR} File not found: '{json_file}'.{C_RESET}"); return None
     except json.JSONDecodeError: print(f"{C_ERROR}{E_ERROR} Invalid JSON in '{json_file}'.{C_RESET}"); return None
     except Exception as e: print(f"{C_ERROR}{E_ERROR} Error loading {json_file}: {e}{C_RESET}"); return None
-
 def extract_summary_data(data):
     if not isinstance(data,list): print(f"{C_ERROR}{E_ERROR} Invalid data.{C_RESET}"); return [],0,0
     summary=[]; total_p=0; total_c=0
@@ -226,7 +210,6 @@ def extract_summary_data(data):
     else: ov_perc_d=f"{C_DIM}{ov_perc:.2f}% N/A{C_RESET}"
     summary.append({'Code':'',f'{E_BOOK} Course':f'{C_WHITE}{C_BOLD}TOTAL{C_RESET}', 'Count':f"{C_WHITE}{C_BOLD}{total_p}/{total_c}{C_RESET}", f'{E_CHART_UP} %':ov_perc_d})
     return summary,total_p,total_c
-
 def extract_detailed_attendance(sub_data):
     details=[]; p_entries=[]
     att_str = sub_data.get('studentAttendanceData','');
@@ -243,21 +226,18 @@ def extract_detailed_attendance(sub_data):
     p_entries.sort(key=lambda x:x['d_o'],reverse=True)
     for i,item in enumerate(p_entries,1): item['Sr']=f"{C_DIM}{i}{C_RESET}"; del item['d_o']; details.append(item)
     return details
-
 def display_summary(summary_data):
     if not summary_data: print(f"{C_WARNING}{E_WARNING} No summary data.{C_RESET}"); return
     try:
         df=pd.DataFrame(summary_data); print(f"\n{C_HEADER}{E_STAR}=== Attendance Summary ==={E_STAR}{C_RESET}\n")
         print(tabulate(df,headers='keys',tablefmt='fancy_grid',showindex=False))
     except Exception as e: print(f"{C_ERROR}{E_ERROR} Error displaying summary: {e}{C_RESET}")
-
 def display_subject_details(subject,details_data):
     if not details_data: print(f"\n{C_WARNING}{E_WARNING} No details for {subject}.{C_RESET}"); return
     try:
         df=pd.DataFrame(details_data); subj_d=f"{C_SUBJECT}{C_BOLD}{subject}{C_RESET}"
         print(f"\n{C_HEADER}=== {E_EYES} Details: {subj_d} ==={C_RESET}\n"); print(tabulate(df,headers='keys',tablefmt='fancy_grid',showindex=False))
     except Exception as e: print(f"{C_ERROR}{E_ERROR} Error displaying details: {e}{C_RESET}")
-
 # === Calculations (Keep previous robust versions) ===
 def calculate_classes_needed_for_target(total_present, total_classes, target_percentage=85):
     if total_classes<=0: return 0,0,0.0
@@ -275,7 +255,6 @@ def calculate_classes_needed_for_target(total_present, total_classes, target_per
         cls_rem-=min(cls_tdy,cls_rem)
     new_p=total_present+cls_n; new_c=total_classes+cls_n; new_perc=(new_p/new_c*100) if new_c>0 else 0
     return cls_n,days_n,new_perc
-
 def calculate_leave_allowance(total_present, total_classes, target_percentage=85):
     if total_classes<=0: return {'current_percentage':0.0,'target_percentage':target_percentage,'max_absences':0,'detailed_days_leave':0,'can_maintain_target':False}
     curr_p=(total_present/total_classes*100);
@@ -291,7 +270,6 @@ def calculate_leave_allowance(total_present, total_classes, target_percentage=85
         if miss_tdy>0: days_l+=1; abs_rem-=miss_tdy
         curr_idx=(curr_idx+1)%7
     return {'current_percentage':curr_p,'target_percentage':target_percentage,'max_absences':max_abs,'detailed_days_leave':days_l,'can_maintain_target':can_m}
-
 def calculate_future_attendance(total_present, total_classes, end_date_str, holidays=None):
     hols=set(holidays) if holidays else set()
     try:
@@ -322,7 +300,6 @@ def calculate_future_attendance(total_present, total_classes, end_date_str, holi
         return {'current_total':f"{total_present}/{total_classes}",'current_percentage':round(curr_p,2),'future_classes':fut_cls,'future_total_classes':fut_tot_cls,'classes_needed_85':cls_needed_85,'scenarios':scenarios}
     except ValueError: return{'error':'Invalid date format YYYY-MM-DD.'}
     except Exception as e: return {'error':f'Future calc error: {e}'}
-
 # === Calculation Display (Keep stylish versions) ===
 def display_leave_allowance_results(result, total_p, total_c):
     print(f"\n{C_HEADER}{E_TARGET}=== Leave Allowance Calculator ==={C_RESET}\n")
@@ -335,7 +312,6 @@ def display_leave_allowance_results(result, total_p, total_c):
         cls_n,days_n,new_p = calculate_classes_needed_for_target(total_p,total_c,result['target_percentage'])
         if cls_n==float('inf'): print(f"{C_ERROR}{E_ERROR} Impossible to reach {result['target_percentage']}%{C_RESET}")
         else: print(f"{C_YELLOW}{E_POINT_RIGHT} Need {C_BOLD}{cls_n}{C_RESET}{C_YELLOW} consecutive classes ({result['target_percentage']}%)"); print(f"{C_YELLOW}   Approx. {C_BOLD}{days_n}{C_RESET}{C_YELLOW} school days."); print(f"{C_YELLOW}   New attendance ~{C_BOLD}{new_p:.2f}%{C_RESET}{C_YELLOW}.{C_RESET}")
-
 def display_future_attendance_results(result):
     if 'error' in result: print(f"\n{C_ERROR}{E_ERROR} {result['error']}{C_RESET}"); return
     print(f"\n{C_HEADER}{E_CALENDAR}=== Future Attendance Projection ==={C_RESET}\n")
@@ -350,8 +326,6 @@ def display_future_attendance_results(result):
          scen_data.append({f'{E_ROCKET}Future Attend %':f"{s['future_attendance']}%",'Classes':s['classes_to_attend'],'Days Req.':s['days_to_attend'],'Proj.Total':s['projected_total'], f'{E_CHART_UP}Proj.Overall %':clr_p})
     try: df=pd.DataFrame(scen_data); print(tabulate(df,headers='keys',tablefmt='fancy_grid',showindex=False))
     except Exception as e: print(f"{C_ERROR}{E_ERROR} Proj table error: {e}{C_RESET}")
-
-
 # === Main Loop (Keep stylish versions) ===
 def run_attendance_tracker(attendance_data):
     if not attendance_data: print(f"{C_WARNING}{E_WARNING} No data.{C_RESET}"); return
@@ -423,8 +397,6 @@ def run_attendance_tracker(attendance_data):
             else: print(f"{C_WARNING}{E_WARNING} Invalid choice.{C_RESET}")
         except ValueError: print(f"{C_WARNING}Invalid number.{C_RESET}")
         except KeyboardInterrupt: print(f"\n{C_YELLOW}{E_WARNING} Operation interrupted.{C_RESET}"); continue
-
-
 # === Main Orchestration ===
 def main():
     clear_screen()
@@ -432,13 +404,10 @@ def main():
     print(f"{C_TITLE}{C_BOLD}*    📊 NIET Attendance Tracker {E_ROCKET}    *{C_RESET}")
     print(f"{C_TITLE}{C_BOLD}{'*'*40}{C_RESET}")
     if not TABULATE_AVAILABLE: print(f"{C_WARNING}{E_WARNING} 'tabulate' missing. Tables will be basic CSV format. (pip install tabulate)")
-
     att_data=None; jsessionid=None; last_username=load_saved_username()
-
     options=[(f"{E_COMPUTER}Log in via Browser",SELENIUM_AVAILABLE,1), (f"{E_LOGIN}Use existing JSESSIONID",True,2), (f"{E_BOOK}Load from '{ATTENDANCE_FILE}'",True,3)]
     print(f"\n{C_BLUE}{E_POINT_RIGHT} How to get data?{C_RESET}")
     for i,(text,enabled,_) in enumerate(options,1): print(f"  {C_CYAN}{i}{C_RESET}. {text}" if enabled else f"  {C_DIM}{i}. {text} (Disabled){C_RESET}")
-
     while True:
         try:
             ch_s=input(f"\n{C_PROMPT} Choice: {C_RESET}").strip(); choice=int(ch_s)
@@ -448,9 +417,7 @@ def main():
             else: print(f"{C_WARNING}Invalid choice #.{C_RESET}")
         except ValueError: print(f"{C_WARNING}Invalid number.{C_RESET}")
         except KeyboardInterrupt: print("\nExiting."); sys.exit(0)
-
     print("-" * 40); choice_num=options[choice-1][2] # Get choice number (1, 2, or 3)
-
     if choice_num==1: # Selenium Login
         print(f"{C_HEADER}--- {E_LOGIN} Selenium Login ---{C_RESET}")
         username_to_use=None
@@ -460,25 +427,20 @@ def main():
             else: last_username=None # Clear if not used
         if not username_to_use: username_to_use=input(f"{C_PROMPT} NIET Cloud username: {C_RESET}").strip()
         if not username_to_use: print(f"{C_ERROR}Username required. Exiting."); sys.exit(1) # Exit if no username provided
-
         password = getpass.getpass(f"{C_PROMPT} NIET Cloud password: {C_RESET}")
         if not password: print(f"{C_ERROR}Password required. Exiting."); sys.exit(1) # Exit if no password provided
-
         login_username, jsessionid = login_and_extract_selenium(NIET_LOGIN_URL, username_to_use, password)
-
         if jsessionid and login_username: # Check if login was successful AND username confirmed by function return
              # Only ask to save if login worked AND we weren't already using the saved one OR the saved one was different
              if last_username != login_username:
                  save_choice = input(f"{C_PROMPT}{E_SAVE} Save username '{C_CYAN}{login_username}{C_PROMPT}' for next time? (Y/n): {C_RESET}").strip().lower()
                  if save_choice=='' or save_choice=='y': save_username(login_username)
-
              att_data=fetch_attendance_data(jsessionid)
              if not att_data: print(f"\n{C_WARNING}{E_WARNING} Fetch failed after login. Trying local file...{C_RESET}"); att_data = load_attendance_data()
         else:
              print(f"{C_ERROR}{E_ERROR} Login failed. Cannot fetch fresh data.{C_RESET}")
              fallback=input(f"{C_PROMPT}Try loading from '{ATTENDANCE_FILE}'? (y/n): {C_RESET}").lower()
              if fallback=='y': att_data=load_attendance_data()
-
     elif choice_num==2: # Existing JSESSIONID
         print(f"{C_HEADER}--- {E_LOGIN} Use Existing JSESSIONID ---{C_RESET}")
         jsessionid=input(f"{C_PROMPT} Enter JSESSIONID: {C_RESET}").strip()
@@ -486,18 +448,15 @@ def main():
             att_data = fetch_attendance_data(jsessionid)
             if not att_data: print(f"\n{C_WARNING}{E_WARNING} Fetch failed. Trying local file...{C_RESET}"); att_data = load_attendance_data()
         else: print(f"{C_WARNING}No JSESSIONID. Trying local file...{C_RESET}"); att_data = load_attendance_data()
-
     elif choice_num==3: # Load from file
         print(f"{C_HEADER}--- {E_BOOK} Load from File ---{C_RESET}")
         f_path=input(f"{C_PROMPT} File path (Enter for '{ATTENDANCE_FILE}'): {C_RESET}").strip()
         att_data=load_attendance_data(f_path if f_path else ATTENDANCE_FILE)
-
     # --- Run tracker ---
     if att_data:
         try: run_attendance_tracker(att_data)
         except KeyboardInterrupt: print(f"\n{C_YELLOW}Exiting.{C_RESET}")
         except Exception as e: print(f"\n{C_ERROR}{E_ERROR} Tracker Error: {e}{C_RESET}"); import traceback; print(f"{C_DIM}{traceback.format_exc()}{C_RESET}")
     else: print(f"\n{C_ERROR}{E_ERROR} Failed to get attendance data. Cannot proceed.{C_RESET}"); sys.exit(1)
-
 if __name__ == "__main__":
     main()
