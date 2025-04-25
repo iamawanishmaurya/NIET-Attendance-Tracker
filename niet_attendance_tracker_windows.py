@@ -3,13 +3,15 @@ import sys
 import subprocess
 import importlib
 import logging
-from selenium.webdriver.remote.remote_connection import LOGGER as selenium_logger
 import warnings
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.edge.service import Service as EdgeService
-import signal
-import threading
-import time
+
+# === Utility Functions ===
+def clear_screen():
+    """Cross-platform screen clearing"""
+    if os.name == 'nt':  # Windows
+        os.system('cls')
+    else:  # Unix/Linux/MacOS
+        os.system('clear')
 
 # ANSI Color Codes
 class Colors:
@@ -85,6 +87,9 @@ def check_and_install_packages():
     installed_packages = {pkg.key for pkg in pkg_resources.working_set}
     missing_packages = []
     
+    # Clear screen before displaying header
+    clear_screen()
+    
     print_colored("\n=== Checking Required Packages ===", Colors.HEADER, bold=True)
     for package, import_name in required_packages.items():
         if package.lower() not in installed_packages:
@@ -106,6 +111,9 @@ def check_and_install_packages():
         sys.exit(0)
     else:
         print_colored("\n✅ All required packages are installed!", Colors.GREEN, bold=True)
+        
+    # Clear screen again before moving to NIET header
+    clear_screen()
 
 # Run package check at startup
 if __name__ == "__main__":
@@ -147,100 +155,6 @@ DEBUG_MODE = False
 _loading_stop = threading.Event()
 _loading_thread = None
 
-# === Animation Constants and Utilities ===
-SPINNERS = {
-    'dots': ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'],
-    'line': ['|', '/', '-', '\\'],
-    'bounce': ['⠁', '⠂', '⠄', '⡀', '⢀', '⠠', '⠐', '⠈'],
-    'rocket': ['🚀 ', ' 🚀', '  🚀', '   🚀', '    🚀', '     🚀', '    🚀', '   🚀', '  🚀', ' 🚀'],
-    'stars': ['✨', '⭐', '🌟', '💫', '✨', '⭐', '🌟', '💫']
-}
-
-def _create_progress_bar(progress, width=30):
-    """Create a progress bar string."""
-    filled = int(width * progress)
-    bar = '█' * filled + '░' * (width - filled)
-    return f'[{bar}] {int(progress * 100)}%'
-
-def _animate_welcome():
-    """Display a welcome animation."""
-    welcome_text = "NIET ATTENDANCE TRACKER"
-    colors = [Colors.CYAN, Colors.GREEN, Colors.YELLOW, Colors.RED, Colors.BLUE]
-    clear_screen()
-    for i in range(len(welcome_text) + 1):
-        text = welcome_text[:i]
-        color = colors[i % len(colors)]
-        print(f"\r{color}{text}{Colors.END}", end='', flush=True)
-        time.sleep(0.1)
-    print("\n")
-    time.sleep(0.5)
-
-def _animate(msg="Loading...", style='dots'):
-    """Enhanced animation function with multiple styles."""
-    frames = SPINNERS.get(style, SPINNERS['dots'])
-    idx = 0
-    start_time = time.time()
-    
-    while not _loading_stop.is_set():
-        frame = frames[idx % len(frames)]
-        elapsed = time.time() - start_time
-        
-        if style == 'rocket':
-            # Special animation for rocket
-            spaces = " " * (idx % 5)
-            line = f"\r{spaces}🚀 {msg} {frame}"
-        elif style == 'progress':
-            # Progress bar animation
-            progress = (elapsed % 3) / 3  # 3-second cycle
-            bar = _create_progress_bar(progress)
-            line = f"\r{msg} {bar}"
-        else:
-            # Default spinner animation
-            line = f"\r{frame} {msg}"
-        
-        sys.stdout.write(f"{C_CYAN}{line}{C_RESET}")
-        sys.stdout.flush()
-        idx += 1
-        time.sleep(0.1)
-    
-    # Clear the line when done
-    sys.stdout.write('\r' + ' ' * (len(msg) + 40) + '\r')
-    sys.stdout.flush()
-
-def start_loading(msg="Processing...", style='dots'):
-    """Start a loading animation with specified style."""
-    global _loading_stop, _loading_thread
-    try:
-        if _loading_thread and _loading_thread.is_alive():
-            return
-        _loading_stop.clear()
-        _loading_thread = threading.Thread(target=_animate, args=(msg, style), daemon=True)
-        _loading_thread.start()
-    except KeyboardInterrupt:
-        stop_loading()
-        print(f"\n{C_YELLOW}👋 Goodbye! Thanks for using NIET Attendance Tracker.{C_RESET}")
-        sys.exit(0)
-
-def stop_loading(succ_msg=None, error_msg=None):
-    """Stop the loading animation with optional success or error message."""
-    global _loading_stop, _loading_thread
-    try:
-        if _loading_thread and _loading_thread.is_alive():
-            _loading_stop.set()
-            _loading_thread.join(0.5)
-        _loading_thread = None
-        
-        if error_msg:
-            print(f"{C_ERROR}❌ {error_msg}{C_RESET}")
-        elif succ_msg:
-            print(f"{C_SUCCESS}✅ {succ_msg}{C_RESET}")
-    except KeyboardInterrupt:
-        if _loading_thread and _loading_thread.is_alive():
-            _loading_stop.set()
-            _loading_thread.join(0.5)
-        print(f"\n{C_YELLOW}👋 Goodbye! Thanks for using NIET Attendance Tracker.{C_RESET}")
-        sys.exit(0)
-
 # --- Selenium for Browser Automation ---
 try:
     from selenium import webdriver
@@ -253,14 +167,21 @@ try:
     from selenium.webdriver.edge.service import Service as EdgeService
     from selenium.webdriver.firefox.options import Options as FirefoxOptions
     from selenium.webdriver.firefox.service import Service as FirefoxService
+    from selenium.webdriver.remote.remote_connection import LOGGER as selenium_logger
     SELENIUM_AVAILABLE = True
 except ImportError:
     print(f"⚠️ Warning: Selenium missing. Browser login disabled. (pip install selenium beautifulsoup4 webdriver-manager)")
     class WebDriverException(Exception): pass
     class TimeoutException(Exception): pass
+    selenium_logger = logging.getLogger('selenium')
 
 # --- Cryptography for Password Encryption ---
-CRYPTOGRAPHY_AVAILABLE = False
+try:
+    from cryptography.fernet import Fernet
+    CRYPTOGRAPHY_AVAILABLE = True
+except ImportError:
+    print("⚠️ Optional 'cryptography' library not found. Password encryption disabled. (pip install cryptography)")
+    CRYPTOGRAPHY_AVAILABLE = False
 
 # --- Rich for Table Display ---
 try:
@@ -367,8 +288,7 @@ def ensure_directory_exists():
         directory = os.path.dirname(CREDENTIALS_FILE)
         if not os.path.exists(directory):
             os.makedirs(directory)
-            if DEBUG_MODE:
-                print(f"{C_SUCCESS}{E_SUCCESS} Created directory: {directory}{C_RESET}")
+            print(f"{C_SUCCESS}{E_SUCCESS} Created directory: {directory}{C_RESET}")
     except Exception as e:
         print(f"{C_ERROR}{E_ERROR} Could not create directory: {e}{C_RESET}")
 
@@ -382,13 +302,17 @@ def load_credentials():
         return []
 
 def save_credentials(username, password):
-    """Save credentials to file."""
+    """Save credentials to file, keeping only the latest entry for each username."""
     try:
         ensure_directory_exists()
         creds = load_credentials()
-        # Update existing or add new using list comprehension
-        if not any(cred['username'] == username and cred.update({'password': password}) for cred in creds):
-            creds.append({'username': username, 'password': password})
+        
+        # Remove any existing entries with the same username
+        creds = [cred for cred in creds if cred['username'] != username]
+        
+        # Add the new credentials
+        creds.append({'username': username, 'password': password})
+        
         with open(CREDENTIALS_FILE, 'w') as f:
             json.dump(creds, f, indent=4)
         print(f"{C_SUCCESS}{E_SUCCESS} Credentials saved successfully.{C_RESET}")
@@ -497,7 +421,6 @@ def select_or_enter_credentials(key=None, show_saved=True):
             print(f"\n{C_HEADER}=== {E_SAVE} Saved Credentials ==={C_RESET}")
             [print(f"  {C_CYAN}{i}{C_RESET}. {C_BLUE}{cred['username']}{C_RESET}") for i, cred in enumerate(saved_creds, 1)]
             print(f"\n{C_HEADER}=== {E_SAVE} Options ==={C_RESET}")
-            print(f"  {C_CYAN}98{C_RESET}. {C_GREEN}Add new user{C_RESET}")
             print(f"  {C_CYAN}0{C_RESET}. {C_RED}Exit{C_RESET}")
         else:
             # When adding new credentials directly
@@ -513,14 +436,6 @@ def select_or_enter_credentials(key=None, show_saved=True):
         if choice == '0':
             print(f"\n{C_INFO}{E_WAVE} Goodbye!{C_RESET}")
             sys.exit(0)
-        
-        # Handle new user
-        if choice == '98':
-            print(f"\n{C_HEADER}=== {E_SAVE} Add New User ==={C_RESET}")
-            username = input(f"{C_PROMPT}Enter NIET Username: {C_CYAN}")
-            print(C_RESET, end='')
-            password = getpass.getpass(f"{C_PROMPT}Enter NIET Password: ")
-            return username, password, False
         
         # Handle saved credential selection
         try:
@@ -794,10 +709,6 @@ def fetch_attendance_data(jsessionid, bypass_ssl_verify=False):
     params = {'termId': 2, 'refreshData': 0}
     url = NIET_ATTENDANCE_URL
 
-    print(f"\n{C_INFO}=== Fetching Attendance Data ==={C_RESET}")
-    print(f"{C_INFO}Using JSESSIONID: ...{jsessionid[-6:]}{C_RESET}")
-    print(f"{C_INFO}URL: {url}{C_RESET}")
-    
     if DEBUG_MODE:
         print(f"{C_INFO}{E_ROCKET} Fetching attendance data...{C_RESET}")
         start_loading("Requesting from NIET Cloud...")
@@ -827,15 +738,10 @@ def fetch_attendance_data(jsessionid, bypass_ssl_verify=False):
         except Exception: raw_text = str(response.content) # Fallback
         content_type = response.headers.get('Content-Type', '').lower()
 
-        print(f"\n{C_INFO}=== Response Details ==={C_RESET}")
-        print(f"{C_INFO}Status Code: {response.status_code}{C_RESET}")
-        print(f"{C_INFO}Content-Type: {content_type}{C_RESET}")
-        print(f"{C_INFO}Response Headers:{C_RESET}")
-        for header, value in response.headers.items():
-            print(f"{C_DIM}  {header}: {value}{C_RESET}")
-        
-        print(f"\n{C_INFO}=== Response Body ==={C_RESET}")
-        print(f"{C_YELLOW}{raw_text}{C_RESET}")
+        if DEBUG_MODE: # Print debug info if enabled
+            print(f"\n{C_DIM}--- Request Debug Info ---")
+            print(f"URL: {response.url}\nStatus Code: {response.status_code}\nContent-Type: {content_type}")
+            print(f"--- Response Body (First 500 chars) ---\n{C_YELLOW}{raw_text[:500]}{C_RESET}\n--- End Debug Info ---{C_RESET}")
 
         response.raise_for_status() # Check for HTTP errors AFTER getting potential content
 
@@ -849,8 +755,6 @@ def fetch_attendance_data(jsessionid, bypass_ssl_verify=False):
             return None
 
         data = response.json()
-        print(f"\n{C_SUCCESS}=== Parsed JSON Data ==={C_RESET}")
-        print(json.dumps(data, indent=2))
 
         try: # Save fetched data
             with open(ATTENDANCE_FILE, 'w', encoding='utf-8') as f: json.dump(data, f, indent=4)
@@ -898,22 +802,11 @@ def fetch_attendance_data(jsessionid, bypass_ssl_verify=False):
 # === Data Loading / Processing / Display ===
 def load_attendance_data(json_file=ATTENDANCE_FILE):
     """Loads attendance data from a JSON file."""
-    ensure_directory_exists()  # Ensure directory exists before reading
     try:
-        with open(json_file,'r', encoding='utf-8') as f: 
-            if DEBUG_MODE:
-                print(f"{C_INFO}{E_INFO} Loading data from '{C_CYAN}{json_file}{C_INFO}'...{C_RESET}")
-            return json.load(f)
-    except FileNotFoundError: 
-        if DEBUG_MODE:
-            print(f"{C_WARNING}{E_WARNING} File not found: '{json_file}'.{C_RESET}")
-        return None
-    except json.JSONDecodeError: 
-        print(f"{C_ERROR}{E_ERROR} Invalid JSON in '{json_file}'.{C_RESET}")
-        return None
-    except Exception as e: 
-        print(f"{C_ERROR}{E_ERROR} Error loading {json_file}: {e}{C_RESET}")
-        return None
+        with open(json_file,'r', encoding='utf-8') as f: print(f"{C_INFO}{E_INFO} Loading data from '{C_CYAN}{json_file}{C_INFO}'...{C_RESET}"); return json.load(f)
+    except FileNotFoundError: print(f"{C_ERROR}{E_ERROR} File not found: '{json_file}'.{C_RESET}"); return None
+    except json.JSONDecodeError: print(f"{C_ERROR}{E_ERROR} Invalid JSON in '{json_file}'.{C_RESET}"); return None
+    except Exception as e: print(f"{C_ERROR}{E_ERROR} Error loading {json_file}: {e}{C_RESET}"); return None
 
 def extract_summary_data(data):
     """Extracts and formats summary attendance data for display, preparing for rich."""
@@ -979,6 +872,9 @@ def extract_detailed_attendance(sub_data):
 def display_summary(summary_data):
     """Displays the attendance summary table using rich if available."""
     if not summary_data: print(f"{C_WARNING}{E_WARNING} No summary data.{C_RESET}"); return
+    
+    # Clear screen before displaying header
+    clear_screen()
 
     if RICH_AVAILABLE:
         console = Console()
@@ -1039,6 +935,9 @@ def display_summary(summary_data):
 def display_subject_details(subject, details_data):
     """Displays the detailed attendance table for a subject using rich if available."""
     if not details_data: print(f"\n{C_WARNING}{E_WARNING} No details for {C_SUBJECT}{subject}{C_RESET}.{C_RESET}"); return
+    
+    # Clear screen before displaying header
+    clear_screen()
 
     if RICH_AVAILABLE:
         console = Console()
@@ -1190,6 +1089,9 @@ def calculate_future_attendance(total_present, total_classes, end_date_str, holi
 # Use lowercase dict/list/tuple hints (Requires Python 3.9+)
 def display_leave_allowance_results(result: dict[str, any], total_p: int, total_c: int, future_schedule: list[tuple[date, int]], target_percentage: float):
     """Displays the results of the leave allowance calculation."""
+    # Clear screen before displaying header
+    clear_screen()
+    
     print(f"\n{C_HEADER}{E_TARGET}=== Leave Allowance Calculator (Target: {target_percentage}%) ==={C_RESET}\n")
     print(f"Current Attendance: {result['current_percentage']:.2f}% ({total_p}/{total_c})")
     if result['can_maintain_target']:
@@ -1215,6 +1117,9 @@ def display_leave_allowance_results(result: dict[str, any], total_p: int, total_
 def display_future_attendance_results(result):
     """Displays the results of the future attendance projection using rich if available."""
     if 'error' in result: print(f"\n{C_ERROR}{E_ERROR} {result['error']}{C_RESET}"); return
+    
+    # Clear screen before displaying header
+    clear_screen()
 
     print(f"\n{C_HEADER}{E_CALENDAR}=== Future Attendance Projection ==={C_RESET}\n")
     print(f"Current Attendance: {result['current_total']} ({result['current_percentage']}%)")
@@ -1383,25 +1288,27 @@ def run_attendance_tracker(attendance_data):
         except Exception as e: print(f"\n{C_ERROR}{E_ERROR} Menu error: {e}\n{C_DIM}{traceback.format_exc()}{C_RESET}"); continue
 
 
-# --- GitHub API Functions ---
-def fetch_github_contributors():
-    """Fetches contributor information from GitHub API."""
-    try:
-        url = "https://api.github.com/repos/iamawanishmaurya/NIET-Attendance-Tracker/contributors"
-        response = requests.get(url)
-        if response.status_code == 200:
-            contributors = response.json()
-            return [contributor['login'] for contributor in contributors]
-        return ["iamawanishmaurya"]  # Fallback to original author if API fails
-    except Exception as e:
-        if DEBUG_MODE:
-            print(f"{C_WARNING}{E_WARNING} Could not fetch contributors: {e}{C_RESET}")
-        return ["iamawanishmaurya"]  # Fallback to original author if request fails
-
+# === Main Orchestration ===
 def main():
     """Main function to run the NIET Attendance Tracker."""
     # Clear screen before displaying header
     clear_screen()
+    
+    # Check and install required packages
+    try:
+        # Try to enable Windows ANSI color support
+        if os.name == 'nt':
+            os.system('color')
+            
+        # Run package check at startup
+        check_and_install_packages()
+    except Exception as e:
+        print_colored(f"Error during package check: {str(e)}", Colors.RED)
+        print_colored("Attempting to install basic requirements...", Colors.YELLOW)
+        install_package('setuptools')
+        print("\n")
+        print_big_message("Please restart the script to continue")
+        sys.exit(1)
     
     # Initialize console for rich output
     console = Console()
@@ -1432,69 +1339,204 @@ def main():
     # Display contributors in a grid with unique styles
     if contributors:
         console.print("\n[bold cyan]Contributors:[/bold cyan]")
-        # Define unique styles and emojis for each contributor
-        contributor_styles = {
-            "iamawanishmaurya": ("bold yellow", "👑"),  # Founder
-            "GITWithAkshay": ("bold green", "🚀"),     # Developer
-            "GitSetGoRishabh": ("bold blue", "💡"),    # Developer
-            "HandsOnCodeWithVansh": ("bold magenta", "⚡")  # Developer
-        }
-        
         # Group contributors into rows of 3
         for i in range(0, len(contributors), 3):
             group = contributors[i:i+3]
             styled_contributors = []
-            for contributor in group:
-                style, emoji = contributor_styles.get(contributor, ("dim", "👤"))
+            for idx, contributor in enumerate(group):
+                style, emoji = get_contributor_style(i + idx)
                 styled_contributors.append(f"[{style}]{emoji} {contributor}[/{style}]")
             console.print("  " + "  |  ".join(styled_contributors))
+    else:
+        console.print("\n[yellow]No contributors found or unable to fetch contributor data.[/yellow]")
     
     # Add repository link
     console.print("\n[blue]Repository:[/blue] https://github.com/iamawanishmaurya/NIET-Attendance-Tracker/")
+
+    # Set alias for easy execution
+    if os.name == 'nt':  # Only for Windows
+        try:
+            # Get the current script's absolute path
+            script_path = os.path.abspath(__file__)
+            
+            # First, ensure the profile directory exists
+            profile_dir_cmd = "$profileDir = Split-Path $PROFILE; if (-not (Test-Path $profileDir)) { New-Item -Path $profileDir -Type Directory -Force | Out-Null }"
+            
+            # Create profile and add alias in one step
+            create_profile_cmd = f"""
+if (-not (Test-Path $PROFILE)) {{
+    $profileContent = @'
+# PowerShell Profile
+
+# NIET Attendance Tracker Alias
+function niet {{
+    & python "{script_path}"
+}}
+'@
+    Set-Content -Path $PROFILE -Value $profileContent
+}} else {{
+    $profileContent = Get-Content $PROFILE -Raw
+    if (-not ($profileContent -match 'function niet')) {{
+        $aliasContent = @'
+
+# NIET Attendance Tracker Alias
+function niet {{
+    & python "{script_path}"
+}}
+'@
+        Add-Content -Path $PROFILE -Value $aliasContent
+    }}
+}}
+"""
+            
+            # Set execution policy
+            policy_cmd = "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force"
+            
+            # Reload profile
+            reload_cmd = ". $PROFILE"
+            
+            # Run commands in sequence
+            commands = [
+                profile_dir_cmd,
+                create_profile_cmd,
+                policy_cmd,
+                reload_cmd
+            ]
+            
+            for cmd in commands:
+                try:
+                    if DEBUG_MODE:
+                        print(f"{C_INFO}Running PowerShell command:{C_RESET}")
+                        print(f"{C_CYAN}{cmd}{C_RESET}")
+                    
+                    result = subprocess.run(
+                        ['powershell', '-Command', cmd],
+                        capture_output=True,
+                        text=True
+                    )
+                    
+                    if result.returncode != 0:
+                        print(f"{C_WARNING}{E_WARNING} Command failed with exit code {result.returncode}{C_RESET}")
+                        if DEBUG_MODE:
+                            print(f"{C_INFO}Error output:{C_RESET}")
+                            print(result.stderr)
+                        continue
+                    
+                    if DEBUG_MODE:
+                        print(f"{C_INFO}Command output:{C_RESET}")
+                        print(result.stdout)
+                        
+                except Exception as e:
+                    print(f"{C_WARNING}{E_WARNING} Error running command: {e}{C_RESET}")
+                    continue
+            
+            # Verify final profile content
+            try:
+                verify_cmd = "Get-Content $PROFILE"
+                verify_result = subprocess.run(
+                    ['powershell', '-Command', verify_cmd],
+                    capture_output=True,
+                    text=True
+                )
+                
+                if verify_result.returncode == 0:
+                    print(f"{C_SUCCESS}{E_SUCCESS} PowerShell profile setup completed.{C_RESET}")
+                    if DEBUG_MODE:
+                        print(f"{C_INFO}Profile content:{C_RESET}")
+                        print(verify_result.stdout)
+                else:
+                    print(f"{C_WARNING}{E_WARNING} Could not verify profile content.{C_RESET}")
+                    
+            except Exception as e:
+                print(f"{C_WARNING}{E_WARNING} Error verifying profile: {e}{C_RESET}")
+            
+            print(f"{C_INFO}To use the 'niet' command, please restart PowerShell.{C_RESET}")
+            
+        except Exception as e:
+            print(f"{C_WARNING}{E_WARNING} Could not set up alias: {e}{C_RESET}")
+            print(f"{C_INFO}You can manually set up the alias by running these commands in PowerShell:{C_RESET}")
+            print(f"{C_CYAN}Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force{C_RESET}")
+            print(f"{C_CYAN}notepad $PROFILE{C_RESET}")
+            print(f"{C_CYAN}Add this line: function niet {{ & python \"{script_path}\" }}{C_RESET}")
+            print(f"{C_CYAN}. $PROFILE{C_RESET}")
     
     # Get login choice without clearing screen
     choice = get_login_choice()
-    
     if choice == 0:
-        console.print("[yellow]Exiting program.[/yellow]")
+        print(f"\n{C_TITLE}{C_BOLD}{'='*60}{C_RESET}")
+        print(f"{C_TITLE}{C_BOLD}*  🚀 You can now use 'niet' command to run this script!  *{C_RESET}")
+        print(f"{C_TITLE}{C_BOLD}{'='*60}{C_RESET}")
+        print(f"{C_INFO}If the 'niet' command is not working, please restart PowerShell.{C_RESET}")
+        print(f"{C_INFO}{E_WAVE} Exiting program.{C_RESET}")
         return
-    
-    # Load saved credentials with animation
-    start_loading("Loading saved credentials...", style='stars')
-    saved_credentials = load_credentials()
-    stop_loading()
-    
-    if choice == 2 and saved_credentials:
-        # Get the first saved credential if available
-        if len(saved_credentials) > 0:
-            cred = saved_credentials[0]  # Get the first credential
-            username = cred['username']
-            password = cred['password']
-            start_loading("Logging in...", style='progress')
-            success, attendance_data = login_and_extract_selenium(NIET_LOGIN_URL, username, password)
-            stop_loading()
+
+    jsessionid = None; username = None; attendance_data = None
+
+    if choice == 2:  # Use saved credentials
+        username_input, password, was_saved = select_or_enter_credentials(key=None, show_saved=True)
+        if not username_input or not password:
+            print(f"{C_ERROR}No valid credentials provided. Exiting.{C_RESET}")
+            return
             
-            if success:
-                console.print("[green]Login successful![/green]")
-                run_attendance_tracker(attendance_data)
+        if DEBUG_MODE:
+            print(f"{C_INFO}Attempting to login via browser...{C_RESET}")
+        login_user, new_jsessionid = login_and_extract_selenium(NIET_LOGIN_URL, username_input, password)
+        if new_jsessionid:
+            jsessionid = new_jsessionid
+            username = login_user
+            save_jsessionid(jsessionid)
+            # Only prompt to save if these were new credentials (not previously saved)
+            if not was_saved:
+                save_choice = input(f"{C_PROMPT}{E_SAVE} Save credentials for '{C_CYAN}{username}{C_PROMPT}'? (y/n): {C_RESET}").strip().lower()
+                if save_choice == 'y':
+                    save_credentials(username, password)
+        else:
+            print(f"{C_ERROR}Login via browser failed.{C_RESET}")
+            # Try using saved JSESSIONID as fallback
+            saved_jsessionid = load_jsessionid()
+            if saved_jsessionid and verify_jsessionid(saved_jsessionid):
+                jsessionid = saved_jsessionid
+                print(f"{C_SUCCESS}{E_SUCCESS} Using saved session as fallback.{C_RESET}")
             else:
-                console.print("[red]Login failed. Please check your credentials.[/red]")
+                print(f"{C_ERROR}No valid session available. Please try logging in again.{C_RESET}")
+                return
+
+    elif choice == 1:  # Login with new credentials
+        if not SELENIUM_AVAILABLE:
+            print(f"{C_ERROR}Selenium not available, cannot login via browser. Exiting.{C_RESET}")
+            return
+            
+        username_input, password, was_saved = select_or_enter_credentials(key=None, show_saved=False)
+        if not username_input or not password:
+            print(f"{C_ERROR}No valid credentials provided. Exiting.{C_RESET}")
+            return
+            
+        if DEBUG_MODE:
+            print(f"{C_INFO}Attempting to login via browser...{C_RESET}")
+        login_user, new_jsessionid = login_and_extract_selenium(NIET_LOGIN_URL, username_input, password)
+        if new_jsessionid:
+            jsessionid = new_jsessionid
+            username = login_user
+            save_jsessionid(jsessionid)
+            # Only prompt to save after successful login
+            save_choice = input(f"{C_PROMPT}{E_SAVE} Save credentials for '{C_CYAN}{username}{C_PROMPT}'? (y/n): {C_RESET}").strip().lower()
+            if save_choice == 'y':
+                save_credentials(username, password)
         else:
-            console.print("[yellow]No saved credentials found. Please use option 1 to login with new credentials.[/yellow]")
-    elif choice == 1:
-        username = input(f"{C_PROMPT}Enter username: {C_RESET}").strip()
-        password = getpass.getpass(f"{C_PROMPT}Enter password: {C_RESET}").strip()
-        
-        start_loading("Logging in...", style='progress')
-        success, attendance_data = login_and_extract_selenium(NIET_LOGIN_URL, username, password)
-        stop_loading()
-        
-        if success:
-            console.print("[green]Login successful![/green]")
-            save_credentials(username, password)
-            run_attendance_tracker(attendance_data)
-        else:
-            console.print("[red]Login failed. Please check your credentials.[/red]")
+            print(f"{C_ERROR}Login via browser failed.{C_RESET}")
+            return
+
+    # --- Fetch Attendance Data (if we have a session ID) ---
+    if jsessionid:
+        attendance_data = fetch_attendance_data(jsessionid, bypass_ssl_verify=True)
+    else:
+        print(f"{C_ERROR}Failed to obtain a valid session ID. Cannot fetch data.{C_RESET}")
+
+    # --- Run Tracker (if data was fetched) ---
+    if attendance_data:
+        run_attendance_tracker(attendance_data)
+    else:
+        print(f"{C_ERROR}Failed to fetch attendance data. Exiting.{C_RESET}")
 
 def get_login_choice():
     """Displays login options and returns user's choice."""
@@ -1530,18 +1572,18 @@ def get_login_choice():
         
         try:
             choice = int(input(f"\n{C_PROMPT}Select an option: {C_RESET}").strip())
-            if choice == 0: return choice
-            elif choice in [1, 2]: return choice
-            elif choice == 3: 
+            if choice == 0:
+                return choice
+            elif choice in [1, 2]:
+                return choice
+            elif choice == 3:
                 toggle_debug_mode()
                 continue  # Show menu again after toggle
-            else: 
+            else:
                 print(f"{C_WARNING}Invalid choice. Please select 0, 1, 2, or 3.{C_RESET}")
-                time.sleep(1)  # Brief pause to read error message
-        except ValueError: 
+        except ValueError:
             print(f"{C_WARNING}Please enter a number.{C_RESET}")
-            time.sleep(1)  # Brief pause to read error message
-        except KeyboardInterrupt: 
+        except KeyboardInterrupt:
             print(f"\n{C_YELLOW}Exiting program.{C_RESET}")
             return 0
 
@@ -1571,28 +1613,134 @@ def clear_screen():
     else:  # Unix/Linux/MacOS
         os.system('clear')
 
-# Add signal handler for Ctrl+C
-def signal_handler(sig, frame):
-    print(f"\n{C_YELLOW}👋 Goodbye! Thanks for using NIET Attendance Tracker.{C_RESET}")
-    # Make sure to stop any running loading animations
-    try:
-        stop_loading()
-    except:
-        pass
-    sys.exit(0)
+# === Animation Constants and Utilities ===
+SPINNERS = {
+    'dots': ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'],
+    'line': ['|', '/', '-', '\\'],
+    'bounce': ['⠁', '⠂', '⠄', '⡀', '⢀', '⠠', '⠐', '⠈'],
+    'rocket': ['🚀 ', ' 🚀', '  🚀', '   🚀', '    🚀', '     🚀', '    🚀', '   🚀', '  🚀', ' 🚀'],
+    'stars': ['✨', '⭐', '🌟', '💫', '✨', '⭐', '🌟', '💫']
+}
 
-# Register the signal handler
-signal.signal(signal.SIGINT, signal_handler)
+def _create_progress_bar(progress, width=30):
+    """Create a simple progress bar string."""
+    filled = int(width * progress)
+    bar = '█' * filled + '░' * (width - filled)
+    return f"[{bar}] {int(progress * 100)}%"
 
-# Modify the main execution guard at the bottom of the file
-if __name__ == "__main__":
+def _animate_welcome():
+    """Display a welcome animation."""
+    welcome_text = "NIET ATTENDANCE TRACKER"
+    colors = [Colors.CYAN, Colors.GREEN, Colors.YELLOW, Colors.RED, Colors.BLUE]
+    clear_screen()
+    for i in range(len(welcome_text) + 1):
+        text = welcome_text[:i]
+        color = colors[i % len(colors)]
+        print(f"\r{color}{text}{Colors.END}", end='', flush=True)
+        time.sleep(0.1)
+    print("\n")
+    time.sleep(0.5)
+
+def _animate(msg="Loading...", style='dots'):
+    """Enhanced animation function with multiple styles."""
+    frames = SPINNERS.get(style, SPINNERS['dots'])
+    idx = 0
+    start_time = time.time()
+    
+    while not _loading_stop.is_set():
+        frame = frames[idx % len(frames)]
+        elapsed = time.time() - start_time
+        
+        if style == 'rocket':
+            # Special animation for rocket
+            spaces = " " * (idx % 5)
+            line = f"\r{spaces}🚀 {msg} {frame}"
+        elif style == 'progress':
+            # Progress bar animation
+            progress = (elapsed % 3) / 3  # 3-second cycle
+            bar = _create_progress_bar(progress)
+            line = f"\r{msg} {bar}"
+        else:
+            # Default spinner animation
+            line = f"\r{frame} {msg}"
+        
+        sys.stdout.write(f"{C_CYAN}{line}{C_RESET}")
+        sys.stdout.flush()
+        idx += 1
+        time.sleep(0.1)
+    
+    # Clear the line when done
+    sys.stdout.write('\r' + ' ' * (len(msg) + 40) + '\r')
+    sys.stdout.flush()
+
+def start_loading(msg="Processing...", style='dots'):
+    """Start a loading animation with specified style."""
+    global _loading_stop, _loading_thread
+    if _loading_thread and _loading_thread.is_alive():
+        return
+    _loading_stop.clear()
+    _loading_thread = threading.Thread(target=_animate, args=(msg, style), daemon=True)
+    _loading_thread.start()
+
+def stop_loading(succ_msg=None, error_msg=None):
+    """Stop the loading animation with optional success or error message."""
+    global _loading_stop, _loading_thread
+    if _loading_thread and _loading_thread.is_alive():
+        _loading_stop.set()
+        _loading_thread.join(0.5)
+    _loading_thread = None
+    
+    if error_msg:
+        print(f"{C_ERROR}{E_ERROR} {error_msg}{C_RESET}")
+    elif succ_msg:
+        print(f"{C_SUCCESS}{E_SUCCESS} {succ_msg}{C_RESET}")
+
+def fetch_github_contributors():
+    """Fetches contributor usernames from the GitHub API."""
     try:
-        ensure_directory_exists()  # Ensure data dir exists at start
-        main()
-    except KeyboardInterrupt:
-        print(f"\n{C_YELLOW}👋 Goodbye! Thanks for using NIET Attendance Tracker.{C_RESET}")
+        # GitHub API endpoint for contributors
+        url = "https://api.github.com/repos/iamawanishmaurya/NIET-Attendance-Tracker/contributors"
+        headers = {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'NIET-Attendance-Tracker'
+        }
+        
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            # Extract only usernames from the response
+            contributors = [contributor['login'] for contributor in response.json()]
+            return contributors
+        else:
+            print(f"{C_WARNING}{E_WARNING} Failed to fetch contributors from GitHub API. Status code: {response.status_code}{C_RESET}")
+            return []  # Return empty list if API call fails
+            
     except Exception as e:
-        print(f"\n{C_ERROR}❌ A critical error occurred: {e}{C_RESET}")
         if DEBUG_MODE:
-            traceback.print_exc()
-        sys.exit(1)
+            print(f"{C_ERROR}{E_ERROR} Error fetching contributors: {e}{C_RESET}")
+            print(f"{C_DIM}{traceback.format_exc()}{C_RESET}")
+        return []  # Return empty list on error
+
+def get_contributor_style(index):
+    """Returns a style and emoji combination based on contributor index."""
+    # Define color styles
+    styles = [
+        ("bold yellow", "👑"),   # Founder style
+        ("bold green", "🚀"),    # Developer style
+        ("bold blue", "💡"),     # Developer style
+        ("bold magenta", "⚡"),  # Developer style
+        ("bold cyan", "🌟"),     # New contributor style
+        ("bold red", "🎯"),      # New contributor style
+        ("bold white", "💫"),    # New contributor style
+        ("bold yellow", "🎨"),   # New contributor style
+        ("bold green", "🔮"),    # New contributor style
+        ("bold blue", "🎭"),     # New contributor style
+    ]
+    
+    # Get style based on index, cycling through the list if needed
+    style_index = index % len(styles)
+    return styles[style_index]
+
+if __name__ == "__main__":
+    main()
+# --- END OF FILE ---
