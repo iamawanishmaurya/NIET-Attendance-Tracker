@@ -169,11 +169,17 @@ CRYPTOGRAPHY_AVAILABLE = False
 try:
     from rich.console import Console
     from rich.table import Table
+    from rich.text import Text
+    from rich.panel import Panel
+    from rich.align import Align
     import rich.box as box # Import box styles
     RICH_AVAILABLE = True
 except ImportError:
     class Console: pass # Dummy class
     class Table: pass # Dummy class
+    class Text: pass # Dummy class
+    class Panel: pass # Dummy class
+    class Align: pass # Dummy class
     print("⚠️ Optional 'rich' library not found. Tables will have basic formatting. (pip install rich)")
 
 # --- Tabulate for Table Display ---
@@ -278,13 +284,17 @@ def load_credentials():
         return []
 
 def save_credentials(username, password):
-    """Save credentials to file."""
+    """Save credentials to file, keeping only the latest entry for each username."""
     try:
         ensure_directory_exists()
         creds = load_credentials()
-        # Update existing or add new using list comprehension
-        if not any(cred['username'] == username and cred.update({'password': password}) for cred in creds):
-            creds.append({'username': username, 'password': password})
+        
+        # Remove any existing entries with the same username
+        creds = [cred for cred in creds if cred['username'] != username]
+        
+        # Add the new credentials
+        creds.append({'username': username, 'password': password})
+        
         with open(CREDENTIALS_FILE, 'w') as f:
             json.dump(creds, f, indent=4)
         print(f"{C_SUCCESS}{E_SUCCESS} Credentials saved successfully.{C_RESET}")
@@ -393,7 +403,6 @@ def select_or_enter_credentials(key=None, show_saved=True):
             print(f"\n{C_HEADER}=== {E_SAVE} Saved Credentials ==={C_RESET}")
             [print(f"  {C_CYAN}{i}{C_RESET}. {C_BLUE}{cred['username']}{C_RESET}") for i, cred in enumerate(saved_creds, 1)]
             print(f"\n{C_HEADER}=== {E_SAVE} Options ==={C_RESET}")
-            print(f"  {C_CYAN}98{C_RESET}. {C_GREEN}Add new user{C_RESET}")
             print(f"  {C_CYAN}0{C_RESET}. {C_RED}Exit{C_RESET}")
         else:
             # When adding new credentials directly
@@ -409,14 +418,6 @@ def select_or_enter_credentials(key=None, show_saved=True):
         if choice == '0':
             print(f"\n{C_INFO}{E_WAVE} Goodbye!{C_RESET}")
             sys.exit(0)
-        
-        # Handle new user
-        if choice == '98':
-            print(f"\n{C_HEADER}=== {E_SAVE} Add New User ==={C_RESET}")
-            username = input(f"{C_PROMPT}Enter NIET Username: {C_CYAN}")
-            print(C_RESET, end='')
-            password = getpass.getpass(f"{C_PROMPT}Enter NIET Password: ")
-            return username, password, False
         
         # Handle saved credential selection
         try:
@@ -1259,10 +1260,52 @@ def run_attendance_tracker(attendance_data):
 
 # === Main Orchestration ===
 def main():
+    """Main function to run the NIET Attendance Tracker."""
+    # Clear screen before displaying header
     clear_screen()
-    print(f"{C_TITLE}{C_BOLD}{'*'*45}{C_RESET}")
-    print(f"{C_TITLE}{C_BOLD}*      📊 NIET Attendance Tracker {E_ROCKET}      *{C_RESET}")
-    print(f"{C_TITLE}{C_BOLD}{'*'*45}{C_RESET}")
+    
+    # Initialize console for rich output
+    console = Console()
+    
+    # Create title
+    title = Text("📊 NIET ATTENDANCE TRACKER", style="bold magenta", justify="center")
+    
+    # Create header panel
+    header_panel = Panel(
+        Align(title, align="center"),
+        border_style="magenta",
+        padding=(1, 2)
+    )
+    
+    # Display header
+    console.print(header_panel)
+    
+    # Initialize loading animation
+    start_loading("Initializing...", style='dots')
+    time.sleep(0.5)
+    stop_loading()
+    
+    # Fetch contributors with animation
+    start_loading("Fetching contributors...", style='rocket')
+    contributors = fetch_github_contributors()
+    stop_loading()
+    
+    # Display contributors in a grid with unique styles
+    if contributors:
+        console.print("\n[bold cyan]Contributors:[/bold cyan]")
+        # Group contributors into rows of 3
+        for i in range(0, len(contributors), 3):
+            group = contributors[i:i+3]
+            styled_contributors = []
+            for idx, contributor in enumerate(group):
+                style, emoji = get_contributor_style(i + idx)
+                styled_contributors.append(f"[{style}]{emoji} {contributor}[/{style}]")
+            console.print("  " + "  |  ".join(styled_contributors))
+    else:
+        console.print("\n[yellow]No contributors found or unable to fetch contributor data.[/yellow]")
+    
+    # Add repository link
+    console.print("\n[blue]Repository:[/blue] https://github.com/iamawanishmaurya/NIET-Attendance-Tracker/")
 
     # Set alias for easy execution
     if os.name == 'nt':  # Only for Windows
@@ -1370,8 +1413,8 @@ function niet {{
             print(f"{C_CYAN}notepad $PROFILE{C_RESET}")
             print(f"{C_CYAN}Add this line: function niet {{ & python \"{script_path}\" }}{C_RESET}")
             print(f"{C_CYAN}. $PROFILE{C_RESET}")
-
-    # --- Get Login Choice ---
+    
+    # Get login choice without clearing screen
     choice = get_login_choice()
     if choice == 0:
         print(f"\n{C_TITLE}{C_BOLD}{'='*60}{C_RESET}")
@@ -1452,19 +1495,51 @@ function niet {{
 def get_login_choice():
     """Displays login options and returns user's choice."""
     while True:
-        print(f"\n{C_HEADER}--- {E_LOGIN} Login Options ---{C_RESET}")
-        print(f"  {C_CYAN}1{C_RESET}. {E_LOGIN} Login with new credentials")
-        print(f"  {C_CYAN}2{C_RESET}. {E_REUSE} Use saved credentials")
-        print(f"  {C_CYAN}3{C_RESET}. {E_GEAR} Toggle Debug Mode ({C_GREEN if DEBUG_MODE else C_RED}{'ON' if DEBUG_MODE else 'OFF'}{C_RESET})")
-        print(f"  {C_CYAN}0{C_RESET}. {E_LOGOUT} Exit")
+        # Create animated welcome message
+        welcome_text = "=== 🔑 Login Options ==="
+        colors = [C_CYAN, C_GREEN, C_YELLOW, C_MAGENTA, C_BLUE]
+        
+        # Type out the welcome message without clearing screen
+        for i in range(len(welcome_text) + 1):
+            text = welcome_text[:i]
+            color = colors[i % len(colors)]
+            print(f"\r{color}{text}{C_RESET}", end='', flush=True)
+            time.sleep(0.05)
+        print("\n")
+        
+        # Show loading animation while preparing options
+        start_loading("Preparing login options...", style='dots')
+        time.sleep(0.5)
+        stop_loading()
+        
+        # Type out each option with a slight delay
+        options = [
+            f"  {C_CYAN}1{C_RESET}. {E_LOGIN} Login with new credentials",
+            f"  {C_CYAN}2{C_RESET}. {E_REUSE} Use saved credentials",
+            f"  {C_CYAN}3{C_RESET}. {E_GEAR} Toggle Debug Mode ({C_GREEN if DEBUG_MODE else C_RED}{'ON' if DEBUG_MODE else 'OFF'}{C_RESET})",
+            f"  {C_CYAN}0{C_RESET}. {E_LOGOUT} Exit"
+        ]
+        
+        for option in options:
+            print(option)
+            time.sleep(0.1)  # Slight delay between options
+        
         try:
             choice = int(input(f"\n{C_PROMPT}Select an option: {C_RESET}").strip())
-            if choice == 0: return choice
-            elif choice in [1, 2]: return choice
-            elif choice == 3: toggle_debug_mode(); continue # Show menu again after toggle
-            else: print(f"{C_WARNING}Invalid choice. Please select 0, 1, 2, or 3.{C_RESET}")
-        except ValueError: print(f"{C_WARNING}Please enter a number.{C_RESET}")
-        except KeyboardInterrupt: print(f"\n{C_YELLOW}Exiting program.{C_RESET}"); return 0
+            if choice == 0:
+                return choice
+            elif choice in [1, 2]:
+                return choice
+            elif choice == 3:
+                toggle_debug_mode()
+                continue  # Show menu again after toggle
+            else:
+                print(f"{C_WARNING}Invalid choice. Please select 0, 1, 2, or 3.{C_RESET}")
+        except ValueError:
+            print(f"{C_WARNING}Please enter a number.{C_RESET}")
+        except KeyboardInterrupt:
+            print(f"\n{C_YELLOW}Exiting program.{C_RESET}")
+            return 0
 
 # --- Emojis ---
 E_SUCCESS="✅"; E_ERROR="❌"; E_WARNING="⚠️"; E_INFO="ℹ️"; E_PROMPT="👉"; E_CLOCK="⏳"; E_ROCKET="🚀"; E_TARGET="🎯"
@@ -1492,24 +1567,133 @@ def clear_screen():
     else:  # Unix/Linux/MacOS
         os.system('clear')
 
-# === Loading Animation ===
-def _animate(msg="Loading..."):
-    frames="|/-\\" ; idx=0
+# === Animation Constants and Utilities ===
+SPINNERS = {
+    'dots': ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'],
+    'line': ['|', '/', '-', '\\'],
+    'bounce': ['⠁', '⠂', '⠄', '⡀', '⢀', '⠠', '⠐', '⠈'],
+    'rocket': ['🚀 ', ' 🚀', '  🚀', '   🚀', '    🚀', '     🚀', '    🚀', '   🚀', '  🚀', ' 🚀'],
+    'stars': ['✨', '⭐', '🌟', '💫', '✨', '⭐', '🌟', '💫']
+}
+
+def _create_progress_bar(progress, width=30):
+    """Create a progress bar string."""
+    filled = int(width * progress)
+    bar = '█' * filled + '░' * (width - filled)
+    return f'[{bar}] {int(progress * 100)}%'
+
+def _animate_welcome():
+    """Display a welcome animation."""
+    welcome_text = "NIET ATTENDANCE TRACKER"
+    colors = [Colors.CYAN, Colors.GREEN, Colors.YELLOW, Colors.RED, Colors.BLUE]
+    clear_screen()
+    for i in range(len(welcome_text) + 1):
+        text = welcome_text[:i]
+        color = colors[i % len(colors)]
+        print(f"\r{color}{text}{Colors.END}", end='', flush=True)
+        time.sleep(0.1)
+    print("\n")
+    time.sleep(0.5)
+
+def _animate(msg="Loading...", style='dots'):
+    """Enhanced animation function with multiple styles."""
+    frames = SPINNERS.get(style, SPINNERS['dots'])
+    idx = 0
+    start_time = time.time()
+    
     while not _loading_stop.is_set():
-        f=frames[idx%len(frames)]; ln=f"\r{C_PROMPT}{E_CLOCK} {msg} {C_YELLOW}{f}{C_RESET} "; sys.stdout.write(ln); sys.stdout.flush()
-        idx+=1; time.sleep(0.15)
-    sys.stdout.write('\r'+' '*(len(msg)+10)+'\r'); sys.stdout.flush()
+        frame = frames[idx % len(frames)]
+        elapsed = time.time() - start_time
+        
+        if style == 'rocket':
+            # Special animation for rocket
+            spaces = " " * (idx % 5)
+            line = f"\r{spaces}🚀 {msg} {frame}"
+        elif style == 'progress':
+            # Progress bar animation
+            progress = (elapsed % 3) / 3  # 3-second cycle
+            bar = _create_progress_bar(progress)
+            line = f"\r{msg} {bar}"
+        else:
+            # Default spinner animation
+            line = f"\r{frame} {msg}"
+        
+        sys.stdout.write(f"{C_CYAN}{line}{C_RESET}")
+        sys.stdout.flush()
+        idx += 1
+        time.sleep(0.1)
+    
+    # Clear the line when done
+    sys.stdout.write('\r' + ' ' * (len(msg) + 40) + '\r')
+    sys.stdout.flush()
 
-def start_loading(msg="Processing..."):
-    global _loading_stop,_loading_thread
-    if _loading_thread and _loading_thread.is_alive(): return
-    _loading_stop.clear();_loading_thread=threading.Thread(target=_animate,args=(msg,),daemon=True);_loading_thread.start()
+def start_loading(msg="Processing...", style='dots'):
+    """Start a loading animation with specified style."""
+    global _loading_stop, _loading_thread
+    if _loading_thread and _loading_thread.is_alive():
+        return
+    _loading_stop.clear()
+    _loading_thread = threading.Thread(target=_animate, args=(msg, style), daemon=True)
+    _loading_thread.start()
 
-def stop_loading(succ_msg=None):
-    global _loading_stop,_loading_thread
-    if _loading_thread and _loading_thread.is_alive(): _loading_stop.set();_loading_thread.join(0.5)
-    _loading_thread=None
-    if succ_msg: print(f"{C_SUCCESS}{E_SUCCESS} {succ_msg}{C_RESET}")
+def stop_loading(succ_msg=None, error_msg=None):
+    """Stop the loading animation with optional success or error message."""
+    global _loading_stop, _loading_thread
+    if _loading_thread and _loading_thread.is_alive():
+        _loading_stop.set()
+        _loading_thread.join(0.5)
+    _loading_thread = None
+    
+    if error_msg:
+        print(f"{C_ERROR}{E_ERROR} {error_msg}{C_RESET}")
+    elif succ_msg:
+        print(f"{C_SUCCESS}{E_SUCCESS} {succ_msg}{C_RESET}")
+
+def fetch_github_contributors():
+    """Fetches contributor usernames from the GitHub API."""
+    try:
+        # GitHub API endpoint for contributors
+        url = "https://api.github.com/repos/iamawanishmaurya/NIET-Attendance-Tracker/contributors"
+        headers = {
+            'Accept': 'application/vnd.github.v3+json',
+            'User-Agent': 'NIET-Attendance-Tracker'
+        }
+        
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            # Extract only usernames from the response
+            contributors = [contributor['login'] for contributor in response.json()]
+            return contributors
+        else:
+            print(f"{C_WARNING}{E_WARNING} Failed to fetch contributors from GitHub API. Status code: {response.status_code}{C_RESET}")
+            return []  # Return empty list if API call fails
+            
+    except Exception as e:
+        if DEBUG_MODE:
+            print(f"{C_ERROR}{E_ERROR} Error fetching contributors: {e}{C_RESET}")
+            print(f"{C_DIM}{traceback.format_exc()}{C_RESET}")
+        return []  # Return empty list on error
+
+def get_contributor_style(index):
+    """Returns a style and emoji combination based on contributor index."""
+    # Define color styles
+    styles = [
+        ("bold yellow", "👑"),   # Founder style
+        ("bold green", "🚀"),    # Developer style
+        ("bold blue", "💡"),     # Developer style
+        ("bold magenta", "⚡"),  # Developer style
+        ("bold cyan", "🌟"),     # New contributor style
+        ("bold red", "🎯"),      # New contributor style
+        ("bold white", "💫"),    # New contributor style
+        ("bold yellow", "🎨"),   # New contributor style
+        ("bold green", "🔮"),    # New contributor style
+        ("bold blue", "🎭"),     # New contributor style
+    ]
+    
+    # Get style based on index, cycling through the list if needed
+    style_index = index % len(styles)
+    return styles[style_index]
 
 if __name__ == "__main__":
     # Dependency checks and warnings
