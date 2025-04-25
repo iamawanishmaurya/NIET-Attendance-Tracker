@@ -32,6 +32,10 @@ A Python-based tool 🐍 for tracking and analyzing attendance data 📊 from th
     ```powershell
     curl -o niet_attendance_tracker_windows.py https://raw.githubusercontent.com/iamawanishmaurya/NIET-Attendance-Tracker/refs/heads/main/niet_attendance_tracker_windows.py
     ```
+4.  Run the script in your **Terminal**:
+    ```powershell
+    python niet_attendance_tracker_windows.py
+    ```
 
 ## 📸 Screenshots
 
