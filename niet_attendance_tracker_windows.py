@@ -427,7 +427,7 @@ def select_or_enter_credentials(key=None, show_saved=True):
             print(f"\n{C_HEADER}=== {E_LOGIN} Enter New Credentials ==={C_RESET}")
             username = input(f"{C_PROMPT}Enter NIET Username: {C_CYAN}")
             print(C_RESET, end='')
-            password = getpass.getpass(f"{C_PROMPT}Enter NIET Password: ")
+            password = input(f"{C_PROMPT}Enter NIET Password: ")
             return username, password, False
         
         choice = input(f"\n{C_PROMPT}Select an option: {C_RESET}").strip()
@@ -1203,15 +1203,31 @@ def run_attendance_tracker(attendance_data):
                 print(f"{C_YELLOW}{E_POINT_RIGHT} Need to attend next {C_BOLD}{cls_n}{C_RESET}{C_YELLOW} classes consecutively.{C_RESET}")
                 if days_n != float('inf'): print(f"{C_YELLOW}   Approx. {C_BOLD}{days_n}{C_RESET}{C_YELLOW} unique future school days (next {default_future_days} days).{C_RESET}")
             plain_border_len = len(f"{'='*20}  ALERT  {'='*20}"); print(f"{C_RED}{'=' * plain_border_len}{C_RESET}")
+        else:
+            # Calculate leave allowance for students above 85%
+            result = calculate_leave_allowance(total_p, total_c, default_schedule, target_alert)
+            leave_border = f"{C_GREEN}{'='*20} {E_HAPPY} LEAVE ALLOWANCE {E_HAPPY} {'='*20}{C_RESET}"; print("\n" + leave_border)
+            print(f"{C_GREEN}Overall attendance ({C_BOLD}{curr_p:.2f}%{C_RESET}{C_GREEN}) is above {target_alert}%! {E_HAPPY}{C_RESET}")
+            if result['max_absences'] == float('inf'):
+                print(f"{C_GREEN}{E_HAPPY} Can miss unlimited classes.{C_RESET}")
+            elif result['max_absences'] == 0:
+                print(f"{C_YELLOW}{E_NEUTRAL} At target, but cannot miss more classes ({C_BOLD}0{C_RESET}{C_YELLOW} max absences) to stay >= {target_alert}%.{C_RESET}")
+            else:
+                print(f"{C_GREEN}{E_HAPPY} Can miss up to {C_BOLD}{result['max_absences']}{C_RESET}{C_GREEN} classes and stay >= {target_alert}%.{C_RESET}")
+                est_days = result['estimated_days_leave']
+                if est_days == float('inf'):
+                    print(f"{C_GREEN}   Corresponds to unlimited leave days.{C_RESET}")
+                elif est_days is not None:
+                    print(f"{C_GREEN}   Based on schedule, approx. {C_BOLD}{est_days}{C_RESET}{C_GREEN} unique leave days.{C_RESET}")
+            plain_border_len = len(f"{'='*20}  LEAVE ALLOWANCE  {'='*20}"); print(f"{C_GREEN}{'=' * plain_border_len}{C_RESET}")
 
     while True:
         print(f"\n{C_HEADER}--- {E_GEAR} Options Menu ---{C_RESET}")
         print(f"  {C_CYAN}1{C_RESET}. {E_EYES} View Detailed Attendance (Subject)")
-        print(f"  {C_CYAN}2{C_RESET}. {E_TARGET} Calculate Leave Allowance (>= 85%, {default_future_days}-day schedule)")
-        print(f"  {C_CYAN}3{C_RESET}. {E_CALENDAR} Project Future Attendance (Custom End Date)")
-        print(f"  {C_CYAN}4{C_RESET}. {E_CHART_UP} Calculate Classes Needed (Custom Target %, {default_future_days}-day schedule)")
-        print(f"  {C_CYAN}5{C_RESET}. {E_BOOK} View Overall Summary Again")
-        print(f"  {C_CYAN}6{C_RESET}. {E_GEAR} Toggle Debug Mode ({C_GREEN if DEBUG_MODE else C_RED}{'ON' if DEBUG_MODE else 'OFF'}{C_RESET})")
+        print(f"  {C_CYAN}2{C_RESET}. {E_CALENDAR} Project Future Attendance (Custom End Date)")
+        print(f"  {C_CYAN}3{C_RESET}. {E_CHART_UP} Calculate Classes Needed (Custom Target %, {default_future_days}-day schedule)")
+        print(f"  {C_CYAN}4{C_RESET}. {E_BOOK} View Overall Summary Again")
+        print(f"  {C_CYAN}5{C_RESET}. {E_GEAR} Toggle Debug Mode ({C_GREEN if DEBUG_MODE else C_RED}{'ON' if DEBUG_MODE else 'OFF'}{C_RESET})")
         print(f"  {C_CYAN}0{C_RESET}. {E_LOGOUT} Exit")
         try:
             choice = int(input(f"\n{C_PROMPT}Enter choice: {C_RESET}").strip())
@@ -1236,9 +1252,6 @@ def run_attendance_tracker(attendance_data):
                      else: print(f"{C_WARNING}Invalid subject number.{C_RESET}")
                  except ValueError: print(f"{C_WARNING}Invalid number.{C_RESET}")
             elif choice == 2:
-                 target_leave = 85.0; result = calculate_leave_allowance(total_p, total_c, default_schedule, target_leave)
-                 display_leave_allowance_results(result, total_p, total_c, default_schedule, target_leave)
-            elif choice == 3:
                 while True:
                      end_date_str = input(f"{C_PROMPT}{E_CALENDAR} Enter end date (YYYY-MM-DD) or 0 to go back: {C_RESET}").strip()
                      if end_date_str == '0': break
@@ -1255,7 +1268,7 @@ def run_attendance_tracker(attendance_data):
                         except ValueError: print(f"{C_WARNING}Invalid format.{C_RESET}")
                     print(f"{C_INFO}Using {len(holidays)} custom holidays.{C_RESET}")
                 result = calculate_future_attendance(total_p, total_c, end_date_str, holidays); display_future_attendance_results(result)
-            elif choice == 4:
+            elif choice == 3:
                  target_perc = None
                  while True:
                     target_str = input(f"{C_PROMPT}{E_TARGET} Enter Target % (e.g., 75) or 0 to go back: {C_RESET}").strip()
@@ -1280,8 +1293,8 @@ def run_attendance_tracker(attendance_data):
                      print(f"{C_YELLOW}   Immediately after, attendance would be ~{C_BOLD}{immediate_new_p:.2f}%{C_RESET}{C_YELLOW}.{C_RESET}")
                  else: print(f"{C_YELLOW}{E_THINK} Already meet target or no classes needed? Check logic.{C_RESET}")
                  plain_header_len = len(f"---{header_text}---"); print(f"{C_HEADER}{'-' * plain_header_len}{C_RESET}")
-            elif choice == 5: display_summary(summary)
-            elif choice == 6: toggle_debug_mode()
+            elif choice == 4: display_summary(summary)
+            elif choice == 5: toggle_debug_mode()
             else: print(f"{C_WARNING}{E_WARNING} Invalid choice.{C_RESET}")
         except ValueError: print(f"{C_WARNING}Invalid number.{C_RESET}")
         except KeyboardInterrupt: print(f"\n{C_YELLOW}{E_WARNING} Menu interrupted.{C_RESET}"); continue
