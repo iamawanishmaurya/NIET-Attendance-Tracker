@@ -80,29 +80,26 @@ def _animate(msg="Loading...", style='dots'):
     
     # Clear the line when done
     sys.stdout.write('\r' + ' ' * (len(msg) + 40) + '\r')
-    sys.stdout.flush()
+    sysloading_thread = None
 
-def start_loading(msg="Processing...", style='dots'):
-    """Start a loading animation with specified style."""
-    global _loading_stop, _loading_thread
-    if _loading_thread and _loading_thread.is_alive():
-        return
+# --- Loading Animation Functions ---
+def start_loading(msg="Loading...", style='dots'):
+    """Starts a loading animation in a separate thread."""
+    global _loading_thread, _loading_stop
     _loading_stop.clear()
-    _loading_thread = threading.Thread(target=_animate, args=(msg, style), daemon=True)
+    _loading_thread = threading.Thread(target=_animate, args=(msg, style))
+    _loading_thread.daemon = True
     _loading_thread.start()
 
-def stop_loading(succ_msg=None, error_msg=None):
-    """Stop the loading animation with optional success or error message."""
-    global _loading_stop, _loading_thread
-    if _loading_thread and _loading_thread.is_alive():
-        _loading_stop.set()
-        _loading_thread.join(0.5)
-    _loading_thread = None
-    
-    if error_msg:
-        print(f"{C_ERROR}{E_ERROR} {error_msg}{C_RESET}")
-    elif succ_msg:
-        print(f"{C_SUCCESS}{E_SUCCESS} {succ_msg}{C_RESET}")
+def stop_loading(msg=None):
+    """Stops the loading animation and optionally displays a message."""
+    global _loading_thread, _loading_stop
+    _loading_stop.set()
+    if _loading_thread:
+        _loading_thread.join()
+        _loading_thread = None
+    if msg:
+        print(f"\r{C_INFO}{msg}{C_RESET}")
 
 # --- Global Variables ---
 RICH_AVAILABLE = False
@@ -401,14 +398,53 @@ def login_and_extract_selenium(url, username, password, browser_choice='firefox'
         # --- Login Steps ---
         stop_loading(f"{E_COMPUTER} {browser_name} WebDriver Initialized.")
         print(f"{C_INFO}{E_LOGIN} Logging into: {C_CYAN}{url}{C_RESET} using {browser_name}")
-        start_loading(f"{E_EYES} Opening page..."); driver.get(url); stop_loading()
-        WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.NAME, "j_username"))).send_keys(username)
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.NAME, "j_password"))).send_keys(password)
-        print(f"{C_INFO}   Credentials entered.")
-        start_loading(f"{E_ROCKET} Submitting..."); WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))).click()
-        try: WebDriverWait(driver, 30).until(EC.any_of(EC.url_contains("Dashboard"), EC.presence_of_element_located((By.LINK_TEXT, "Logout")), EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Welcome')]")))); stop_loading(f"{E_SUCCESS} Login submitted.")
-        except TimeoutException: stop_loading(); print(f"{C_WARNING}{E_WARNING} Post-login confirmation timeout. Check {output_filename}.")
-        except WebDriverException as e: stop_loading(); print(f"{C_ERROR}{E_ERROR} Error waiting for login confirmation: {e}{C_RESET}")
+        
+        # Wait for page to load completely
+        start_loading(f"{E_EYES} Opening page...")
+        driver.get(url)
+        WebDriverWait(driver, 30).until(lambda d: d.execute_script('return document.readyState') == 'complete')
+        stop_loading()
+        
+        # Wait for login form to be present and interactable
+        try:
+            username_field = WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.NAME, "j_username"))
+            )
+            WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.NAME, "j_username")))
+            username_field.clear()
+            username_field.send_keys(username)
+            
+            password_field = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.NAME, "j_password"))
+            )
+            password_field.clear()
+            password_field.send_keys(password)
+            
+            print(f"{C_INFO}   Credentials entered.")
+            
+            # Submit login
+            start_loading(f"{E_ROCKET} Submitting...")
+            submit_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[type='submit']"))
+            )
+            submit_button.click()
+            
+            # Wait for successful login indicators
+            WebDriverWait(driver, 30).until(
+                EC.any_of(
+                    EC.url_contains("Dashboard"),
+                    EC.presence_of_element_located((By.LINK_TEXT, "Logout")),
+                    EC.presence_of_element_located((By.XPATH, "//*[contains(text(), 'Welcome')]"))
+                )
+            )
+            stop_loading(f"{E_SUCCESS} Login submitted.")
+            
+        except TimeoutException as e:
+            stop_loading()
+            print(f"{C_ERROR}{E_ERROR} Login failed: {str(e)}")
+            print(f"{C_WARNING}Please check if the website is accessible and the credentials are correct.")
+            print(f"{C_INFO}You can try manually logging in to verify the credentials.")
+            raise
 
         # ******** FIX START ********
         # Correctly indented block for saving HTML
@@ -434,7 +470,6 @@ def login_and_extract_selenium(url, username, password, browser_choice='firefox'
             stop_loading(f"{E_LOGOUT} {browser_name} Closed.")
         else: # Ensure stop_loading is called if driver initialization failed earlier
              if _loading_thread and _loading_thread.is_alive(): stop_loading()
-
 
     return username if jsessionid else None, jsessionid
 
@@ -822,7 +857,7 @@ def calculate_future_attendance(total_present, total_classes, end_date_str, holi
                  future_days_schedule.append((temp_d, cls_day))
                  if cls_day > 0: future_classes_total += cls_day
             temp_d += timedelta(days=1)
-        projected_total_classes = total_classes + future_classes_total
+        future_total_classes = total_classes + future_classes_total
         curr_p = (total_present / total_classes * 100) if total_classes > 0 else 0.0
         classes_needed_for_85, _, _ = calculate_classes_needed_for_target(total_present, total_classes, future_days_schedule, 85.0)
         scenarios = []; percentages_to_check = [100, 95, 90, 85, 75, 50, 0]
@@ -838,9 +873,9 @@ def calculate_future_attendance(total_present, total_classes, end_date_str, holi
                         if attended_today > 0: unique_days_to_attend.add(day_date); classes_to_attend_counter -= attended_today
                 days_required_for_classes = len(unique_days_to_attend)
             projected_total_present = total_present + future_present_count
-            projected_percentage = (projected_total_present / projected_total_classes * 100) if projected_total_classes > 0 else 0.0
-            scenarios.append({'future_attendance': future_attend_percent, 'classes_to_attend': future_present_count, 'days_to_attend': days_required_for_classes, 'projected_total': f"{projected_total_present}/{projected_total_classes}", 'projected_percentage': round(projected_percentage, 2)})
-        return {'current_total': f"{total_present}/{total_classes}", 'current_percentage': round(curr_p, 2), 'future_classes': future_classes_total, 'future_total_classes': projected_total_classes, 'classes_needed_85': classes_needed_for_85, 'scenarios': scenarios}
+            projected_percentage = (projected_total_present / future_total_classes * 100) if future_total_classes > 0 else 0.0
+            scenarios.append({'future_attendance': future_attend_percent, 'classes_to_attend': future_present_count, 'days_to_attend': days_required_for_classes, 'projected_total': f"{projected_total_present}/{future_total_classes}", 'projected_percentage': round(projected_percentage, 2)})
+        return {'current_total': f"{total_present}/{total_classes}", 'current_percentage': round(curr_p, 2), 'future_classes': future_classes_total, 'future_total_classes': future_total_classes, 'classes_needed_85': classes_needed_for_85, 'scenarios': scenarios}
     except ValueError: return {'error': 'Invalid date format. Please use YYYY-MM-DD.'}
     except Exception as e: print(f"{C_ERROR}Future calc error: {e}\n{C_DIM}{traceback.format_exc()}{C_RESET}"); return {'error': 'Unexpected error.'}
 
@@ -871,28 +906,22 @@ def display_leave_allowance_results(result: Dict[str, any], total_p: int, total_
 
 # --- REWRITTEN: display_future_attendance_results (using rich with lines) ---
 def display_future_attendance_results(result):
-    """Displays the results of the future attendance projection using rich if available."""
     if 'error' in result: print(f"\n{C_ERROR}{E_ERROR} {result['error']}{C_RESET}"); return
-    
-    # Clear screen before displaying header
     clear_screen()
-
     print(f"\n{C_HEADER}{E_CALENDAR}=== Future Attendance Projection ==={C_RESET}\n")
     print(f"Current Attendance: {result['current_total']} ({result['current_percentage']}%)")
     print(f"Total Future Classes Until End Date: {result['future_classes']}")
     print(f"Projected Total Classes by End Date: {result['future_total_classes']}")
-
     if result['classes_needed_85'] != 0:
         if result['classes_needed_85'] == float('inf'): print(f"\n{C_ERROR}{E_CHART_DOWN} Impossible to reach 85% overall by end date based on schedule.{C_RESET}")
         elif result['classes_needed_85'] > 0: print(f"\n{C_YELLOW}{E_TARGET} To reach 85% overall, must attend >= {C_BOLD}{result['classes_needed_85']}{C_RESET}{C_YELLOW} of the {result['future_classes']} future classes.{C_RESET}")
     else: print(f"\n{C_GREEN}{E_HAPPY} Projected to be >= 85% by end date if attending all future classes.{C_RESET}")
-
     print(f"\n{C_BLUE}{E_THINK} Projections based on different future attendance rates:{C_RESET}")
     scen_data = []
     for s in result['scenarios']:
          proj_p = s['projected_percentage']
          emoji = ""; rich_style = ""
-         if result['projected_total_classes'] > 0:
+         if result['future_total_classes'] > 0:
              if proj_p < 75: rich_style, emoji = "bold red", E_SAD
              elif proj_p < 85: rich_style, emoji = "bold yellow", E_NEUTRAL
              else: rich_style, emoji = "bold green", E_HAPPY
