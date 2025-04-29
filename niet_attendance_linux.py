@@ -1,10 +1,3 @@
-# --- START OF FILE firefox_new.py ---
-
-# --- START OF FILE firefox_loginnn.py ---
-
-# --- START OF FILE niet_attendance_tracker.py ---
-
-# --- Basic Imports ---
 import json
 import pandas as pd
 import requests
