@@ -1136,7 +1136,7 @@ def display_future_attendance_results(result):
     for s in result['scenarios']:
          proj_p = s['projected_percentage']
          emoji = ""; rich_style = ""
-         if result['projected_total_classes'] > 0:
+         if result['future_total_classes'] > 0:
              if proj_p < 75: rich_style, emoji = "bold red", E_SAD
              elif proj_p < 85: rich_style, emoji = "bold yellow", E_NEUTRAL
              else: rich_style, emoji = "bold green", E_HAPPY
