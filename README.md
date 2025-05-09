@@ -64,9 +64,7 @@ A Python-based tool 🐍 for tracking and analyzing attendance data 📊 from th
 2.  **Download the Script** ⬇️:
     *(Run this in your Terminal)*
     ```bash
-    curl -o niet_attendance_tracker.py https://raw.githubusercontent.com/iamawanishmaurya/NIET-Attendance-Tracker/main/niet_attendance_tracker_linux.py
-    # Or using wget:
-    # wget -O niet_attendance_tracker.py https://raw.githubusercontent.com/iamawanishmaurya/NIET-Attendance-Tracker/main/niet_attendance_tracker_linux.py
+    curl -o niet_attendance_tracker.py https://raw.githubusercontent.com/iamawanishmaurya/NIET-Attendance-Tracker/refs/heads/main/niet_attendance_linux.py
     ```
 
 3.  **Set up a Virtual Environment** (Recommended)  izoláláshoz:
